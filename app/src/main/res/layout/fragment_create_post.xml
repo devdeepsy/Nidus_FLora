@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- ── Signed-out gate ── -->
+        <LinearLayout
+            android:id="@+id/layout_signed_out"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="32dp"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Sign in to share with the community"
+                android:textAppearance="?attr/textAppearanceTitleMedium"
+                android:layout_marginBottom="24dp"/>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_google_sign_in"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Sign in with Google"
+                app:icon="@drawable/ic_google"/>
+
+        </LinearLayout>
+
+        <!-- ── Signed-in form ── -->
+        <LinearLayout
+            android:id="@+id/layout_signed_in"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/tv_signed_in_as"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAppearance="?attr/textAppearanceBodySmall"
+                android:layout_marginBottom="16dp"/>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Title"
+                android:layout_marginBottom="12dp">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/et_post_title"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:maxLines="1"
+                    android:inputType="text"/>
+
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="What's on your mind?"
+                android:layout_marginBottom="12dp">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/et_post_body"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minLines="4"
+                    android:gravity="top"
+                    android:inputType="textMultiLine"/>
+
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Tag chips -->
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/chip_group_tags"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                app:singleSelection="true"/>
+
+            <!-- Image preview -->
+            <ImageView
+                android:id="@+id/img_preview"
+                android:layout_width="match_parent"
+                android:layout_height="200dp"
+                android:scaleType="centerCrop"
+                android:visibility="gone"
+                android:layout_marginBottom="8dp"/>
+
+            <!-- Image buttons row -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="16dp">
+
+                <ImageButton
+                    android:id="@+id/btn_pick_image"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:src="@drawable/ic_add"
+                    android:contentDescription="Add photo"/>
+
+                <ImageButton
+                    android:id="@+id/btn_remove_image"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:src="@drawable/ic_cross"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Delete post"
+                    android:padding="6dp"
+                    android:scaleType="fitCenter"
+                    android:visibility="gone"
+                    app:tint="?attr/colorError"/>
+
+            </LinearLayout>
+
+            <!-- Submit row -->
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_submit_post"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Share Post"/>
+
+                <ProgressBar
+                    android:id="@+id/progress_submit"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:visibility="gone"/>
+
+            </FrameLayout>
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</ScrollView>

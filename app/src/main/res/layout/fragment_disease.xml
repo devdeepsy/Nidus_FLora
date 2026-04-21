@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?attr/colorPrimary"
+        app:elevation="4dp">
+
+        <com.google.android.material.appbar.MaterialToolbar
+            android:layout_width="match_parent"
+            android:layout_height="100dp"
+            android:background="?attr/colorPrimary">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:gravity="bottom|start"
+                android:paddingStart="16dp"
+                android:paddingBottom="14dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="AgriExpert"
+                    android:textSize="11sp"
+                    android:letterSpacing="0.12"
+                    android:textAllCaps="true"
+                    android:alpha="0.75"
+                    android:textColor="?attr/colorOnPrimary"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Disease Detector"
+                    android:textSize="26sp"
+                    android:textStyle="bold"
+                    android:textColor="?attr/colorOnPrimary"/>
+
+            </LinearLayout>
+        </com.google.android.material.appbar.MaterialToolbar>
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true"
+        android:paddingBottom="96dp"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+    <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Take or upload a photo of your plant to diagnose diseases."
+                android:textSize="13sp"
+                android:textColor="#757575"
+                android:layout_marginBottom="12dp"/>
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="⚠ AI-based detection. Results may not be 100% accurate. Always consult an agronomist for critical decisions."
+                android:textSize="12sp"
+                android:textColor="#E65100"
+                android:background="#FFF3E0"
+                android:padding="10dp"
+                android:layout_marginBottom="12dp"/>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="16dp">
+
+                <TextView
+                    android:id="@+id/tvScanCounter"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Scans today: 0 / 3"
+                    android:textSize="13sp"
+                    android:textColor="#388E3C"/>
+
+                <TextView
+                    android:id="@+id/tvScanWarning"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="⚠ 1 scan left"
+                    android:textColor="#D32F2F"
+                    android:textSize="12sp"
+                    android:visibility="gone"/>
+            </LinearLayout>
+
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="220dp"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp"
+                android:layout_marginBottom="16dp">
+
+                <ImageView
+                    android:id="@+id/ivPlantPreview"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/ic_plant_placeholder"/>
+            </androidx.cardview.widget.CardView>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:layout_marginBottom="12dp">
+
+                <Button
+                    android:id="@+id/btnTakePhoto"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="📷 Take Photo"
+                    android:layout_marginEnd="8dp"
+                    android:backgroundTint="#388E3C"
+                    style="@style/Widget.MaterialComponents.Button"/>
+
+                <Button
+                    android:id="@+id/btnChooseGallery"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="🖼 Gallery"
+                    android:layout_marginStart="8dp"
+                    android:backgroundTint="#558B2F"
+                    style="@style/Widget.MaterialComponents.Button"/>
+            </LinearLayout>
+            <Button
+                android:id="@+id/btnAnalyze"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="🔍 Analyze Plant"
+                android:enabled="false"
+                android:backgroundTint="#1B5E20"
+                android:layout_marginBottom="16dp"
+                style="@style/Widget.MaterialComponents.Button"/>
+            <androidx.cardview.widget.CardView
+                android:id="@+id/cardResult"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="🔬 Diagnosis Result"
+                        android:textStyle="bold"
+                        android:textSize="16sp"
+                        android:textColor="#1B5E20"
+                        android:layout_marginBottom="12dp"/>
+
+                    <TextView
+                        android:id="@+id/tvCropIdentified"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="#E8F5E9"
+                        android:padding="10dp"
+                        android:textSize="14sp"
+                        android:textColor="#1B5E20"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="8dp"/>
+
+                    <TextView
+                        android:id="@+id/tvDiseaseResult"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="#FFF3E0"
+                        android:padding="10dp"
+                        android:textSize="14sp"
+                        android:textColor="#E65100"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="8dp"/>
+
+                    <TextView
+                        android:id="@+id/tvFullResult"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textSize="13sp"
+                        android:textColor="#212121"
+                        android:lineSpacingExtra="6dp"/>
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+    <FrameLayout
+        android:id="@+id/loadingOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#88000000"
+        android:visibility="gone"
+        android:clickable="true">
+
+        <ProgressBar
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:layout_gravity="center"
+            android:indeterminateTint="@android:color/white"/>
+    </FrameLayout>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>
+
+

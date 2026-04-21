@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Primary Colors (Darker variants for dark mode) -->
+    <color name="Dark_green">#1B5E20</color>
+    <color name="light_green">#388E3C</color>
+
+    <!-- Neutral Colors -->
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+
+    <!-- Background & Surface Colors -->
+    <color name="background_light">#121212</color>
+    <color name="surface_light">#1E1E1E</color>
+    <color name="surface_variant_light">#2D2D2D</color>
+
+    <!-- Text Colors -->
+    <color name="text_primary_light">#E0E0E0</color>
+    <color name="text_secondary_light">#9E9E9E</color>
+    <color name="text_hint_light">#6D6D6D</color>
+
+    <!-- Status Bar -->
+    <color name="status_bar_light">#0D3C10</color>
+
+    <!-- Card & Chip Colors -->
+    <color name="card_background_light">#2D2D2D</color>
+    <color name="chip_background_light">#1E3A1F</color>
+
+    <!-- Input Fields -->
+    <color name="edittext_background_light">#2D2D2D</color>
+    <color name="edittext_stroke_light">#444444</color>
+
+    <!-- Weather Cards -->
+    <color name="weather_card_light">#1e1e1e</color>
+    <color name="weather_alert_light">#332200</color>
+
+    <!-- News Cards -->
+    <color name="news_card_light">#2D2D2D</color>
+
+    <!-- Market Price Table -->
+    <color name="table_header_light">#1E3A1F</color>
+    <color name="table_row_light">#2D2D2D</color>
+    <color name="table_stripe_light">#252525</color>
+
+    <!-- Semantic Colors -->
+    <color name="success_green">#4CAF50</color>
+    <color name="warning_orange">#FF9800</color>
+    <color name="error_red">#F44336</color>
+    <color name="info_blue">#2196F3</color>
+
+    <!-- Chat Bubbles -->
+    <color name="chat_user_bubble">#FF4081</color>
+    <color name="chat_assistant_bubble">#2196F3</color>
+    <color name="chat_user_text">#FFFFFF</color>
+    <color name="chat_assistant_text">#FFFFFF</color>
+
+    <!-- Bottom Navigation -->
+    <color name="bottom_nav_background">#1E1E1E</color>
+    <color name="bottom_nav_icon">#9E9E9E</color>
+    <color name="bottom_nav_icon_selected">#4CAF50</color>
+
+    <!-- Progress Bars -->
+    <color name="progress_background">#424242</color>
+    <color name="progress_foreground">#4CAF50</color>
+
+    <color name="teal_700">#03DAC6</color>
+    <color name="green">#4CAF50</color>
+    <color name="gray">#9E9E9E</color>
+    <color name="gray_light">#424242</color>
+</resources>

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Custom theme attributes for AgriExpert -->
+    <attr name="weatherCardColor" format="color|reference"/>
+    <attr name="colorSurface" format="color|reference"/>
+    <attr name="colorOnSurface" format="color|reference"/>
+    <attr name="chatUserBubbleColor" format="color|reference"/>
+    <attr name="chatAssistantBubbleColor" format="color|reference"/>
+    <attr name="bottomNavBackground" format="color|reference"/>
+    <attr name="bottomNavIconSelected" format="color|reference"/>
+    <attr name="bottomNavIcon" format="color|reference"/>
+
+    <!-- Card and surface variants -->
+    <attr name="cardBackgroundColor" format="color|reference"/>
+    <attr name="chipBackgroundColor" format="color|reference"/>
+    <attr name="newsCardColor" format="color|reference"/>
+    <attr name="tableHeaderColor" format="color|reference"/>
+    <attr name="tableRowColor" format="color|reference"/>
+
+    <!-- Semantic colors -->
+    <attr name="successColor" format="color|reference"/>
+    <attr name="warningColor" format="color|reference"/>
+    <attr name="errorColor" format="color|reference"/>
+    <attr name="infoColor" format="color|reference"/>
+
+    <!-- Weather specific -->
+    <attr name="weatherAlertColor" format="color|reference"/>
+    <attr name="colorPrimary" format="color|reference"/>
+    <attr name="colorPrimaryVariant" format="color|reference"/>
+
+</resources>

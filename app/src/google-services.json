@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "1082704903426",
+    "project_id": "agriexpert-68dac",
+    "storage_bucket": "agriexpert-68dac.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1082704903426:android:bef5b3242ae0ea142a961b",
+        "android_client_info": {
+          "package_name": "com.deepgamer.agriexpert"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1082704903426-3ep1prqmhvm8ht8el21ullsgk4lfkdju.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.deepgamer.agriexpert",
+            "certificate_hash": "084b13bef642d9628bae6379166b6824f345fafc"
+          }
+        },
+        {
+          "client_id": "1082704903426-2eo6ijllg41dno68252a9jf1srgl889s.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCfQX9M-sW0tFaC26TLQOVbG9g2oMLtUTU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1082704903426-2eo6ijllg41dno68252a9jf1srgl889s.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

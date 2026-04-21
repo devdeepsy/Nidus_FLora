@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- Feed list -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recycler_feed"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clipToPadding="false"
+        android:paddingTop="8dp"
+        android:paddingBottom="88dp"
+        android:scrollbars="none"/>
+
+    <!-- Loading -->
+    <ProgressBar
+        android:id="@+id/progress_feed"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:visibility="gone"/>
+
+    <!-- Empty / error state -->
+    <TextView
+        android:id="@+id/tv_feed_empty"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:gravity="center"
+        android:padding="32dp"
+        android:textSize="15sp"
+        android:lineSpacingMultiplier="1.4"
+        android:textColor="?attr/colorOnSurfaceVariant"
+        android:visibility="gone"/>
+
+</FrameLayout>

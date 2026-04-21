@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.AgriExpert" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/Dark_green</item>
+        <item name="colorPrimaryVariant">@color/Dark_green</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorSecondary">@color/light_green</item>
+        <item name="colorSecondaryVariant">@color/light_green</item>
+        <item name="colorOnSecondary">@color/white</item>
+
+        <!-- Background colors -->
+        <item name="android:colorBackground">@color/background_light</item>
+        <item name="colorSurface">@color/surface_light</item>
+        <item name="colorOnSurface">@color/text_primary_light</item>
+
+        <!-- Additional colors -->
+        <item name="colorSurfaceVariant">@color/surface_variant_light</item>
+        <item name="colorOnSurfaceVariant">@color/text_secondary_light</item>
+        <item name="colorOutline">@color/edittext_stroke_light</item>
+
+        <!-- Custom attributes -->
+        <item name="weatherCardColor">@color/weather_card_light</item>
+        <item name="chatUserBubbleColor">@color/chat_user_bubble</item>
+        <item name="chatAssistantBubbleColor">@color/chat_assistant_bubble</item>
+        <item name="bottomNavBackground">@color/bottom_nav_background</item>
+        <item name="bottomNavIconSelected">@color/bottom_nav_icon_selected</item>
+        <item name="bottomNavIcon">@color/bottom_nav_icon</item>
+        <item name="cardBackgroundColor">@color/card_background_light</item>
+        <item name="chipBackgroundColor">@color/chip_background_light</item>
+        <item name="newsCardColor">@color/news_card_light</item>
+        <item name="tableHeaderColor">@color/table_header_light</item>
+        <item name="tableRowColor">@color/table_row_light</item>
+        <item name="successColor">@color/success_green</item>
+        <item name="warningColor">@color/warning_orange</item>
+        <item name="errorColor">@color/error_red</item>
+        <item name="infoColor">@color/info_blue</item>
+        <item name="weatherAlertColor">@color/weather_alert_light</item>
+
+        <!-- Status bar — make it match the green toolbar -->
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:statusBarColor">@color/Dark_green</item>
+    </style>
+
+    <style name="Theme.AgriExpert.NoActionBar" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+    </style>
+
+    <style name="Theme.AgriExpert.SplashScreen" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="android:windowBackground">@color/white</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+    </style>
+
+    <style name="Widget.AgriExpert.BottomNavigationView" parent="Widget.Material3.BottomNavigationView">
+        <item name="backgroundTint">?attr/bottomNavBackground</item>
+        <item name="itemIconTint">@drawable/bottom_nav_icon_tint</item>
+        <item name="itemTextColor">@drawable/bottom_nav_icon_tint</item>
+    </style>
+
+    <style name="AgriToolbar" parent="Widget.MaterialComponents.Toolbar">
+        <item name="android:background">?attr/colorPrimary</item>
+        <item name="android:elevation">4dp</item>
+        <item name="titleTextColor">?attr/colorOnPrimary</item>
+        <item name="subtitleTextColor">?attr/colorOnPrimary</item>
+    </style>
+
+</resources>

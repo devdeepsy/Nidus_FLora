@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?attr/colorSurface">
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/appbar_community"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?attr/colorPrimary"
+        app:elevation="4dp">
+
+        <com.google.android.material.appbar.MaterialToolbar
+            android:layout_width="match_parent"
+            android:layout_height="100dp"
+            android:background="?attr/colorPrimary">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="horizontal"
+                android:gravity="bottom|start"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:paddingBottom="14dp">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="AgriExpert"
+                        android:textSize="11sp"
+                        android:letterSpacing="0.12"
+                        android:textAllCaps="true"
+                        android:alpha="0.75"
+                        android:textColor="?attr/colorOnPrimary"/>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Community"
+                        android:textSize="26sp"
+                        android:textStyle="bold"
+                        android:textColor="?attr/colorOnPrimary"/>
+
+                </LinearLayout>
+
+                <ImageButton
+                    android:id="@+id/btn_sign_out"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:src="@drawable/ic_logout"
+                    app:tint="?attr/colorOnPrimary"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Sign out"
+                    android:visibility="gone"/>
+
+            </LinearLayout>
+        </com.google.android.material.appbar.MaterialToolbar>
+
+        <com.google.android.material.tabs.TabLayout
+            android:id="@+id/tabs_community"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="?attr/colorPrimary"
+            app:tabMode="scrollable"
+            app:tabGravity="start"
+            app:tabIndicatorColor="?attr/colorOnPrimary"
+            app:tabSelectedTextColor="?attr/colorOnPrimary"
+            app:tabTextColor="#99ffffff"
+            app:tabIndicatorHeight="3dp"
+            app:tabRippleColor="@android:color/transparent"/>
+
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <androidx.viewpager2.widget.ViewPager2
+        android:id="@+id/vp_community"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior"/>
+
+    <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+        android:id="@+id/fab_new_post"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="20dp"
+        android:text="New Post"
+        android:textColor="?attr/colorOnPrimary"
+        app:icon="@drawable/ic_add"
+        app:iconTint="?attr/colorOnPrimary"
+        android:backgroundTint="?attr/colorPrimary"
+        android:visibility="visible"
+        app:layout_behavior="com.google.android.material.behavior.HideBottomViewOnScrollBehavior"/>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

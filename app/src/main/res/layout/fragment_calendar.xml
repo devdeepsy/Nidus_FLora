@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?attr/colorPrimary"
+        app:elevation="4dp">
+
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="100dp"
+            android:background="?attr/colorPrimary">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:gravity="bottom|start"
+                android:paddingStart="16dp"
+                android:paddingBottom="14dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="AgriExpert"
+                    android:textSize="11sp"
+                    android:letterSpacing="0.12"
+                    android:textAllCaps="true"
+                    android:alpha="0.75"
+                    android:textColor="?attr/colorOnPrimary"/>
+
+                <TextView
+                    android:id="@+id/calendarTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Crop Calendar"
+                    android:textSize="26sp"
+                    android:textStyle="bold"
+                    android:textColor="?attr/colorOnPrimary"/>
+
+            </LinearLayout>
+        </com.google.android.material.appbar.MaterialToolbar>
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior"
+        android:padding="8dp"
+        android:background="?attr/colorSurface">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="🌱 Active Crops"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="?attr/colorOnSurface"
+            android:paddingStart="4dp"
+            android:paddingBottom="6dp"/>
+
+        <TextView
+            android:id="@+id/tvNoCrops"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="No crops added yet. Tap + to add one."
+            android:textSize="12sp"
+            android:textColor="#9E9E9E"
+            android:paddingStart="4dp"
+            android:paddingBottom="8dp"
+            android:visibility="gone"/>
+
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:scrollbars="none"
+            android:layout_marginBottom="12dp">
+
+            <LinearLayout
+                android:id="@+id/cropCardsContainer"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingStart="4dp"
+                android:paddingEnd="4dp"/>
+
+        </HorizontalScrollView>
+        <!-- Add crop button -->
+        <Button
+            android:id="@+id/btnAddCrop"
+            android:layout_width="match_parent"
+            android:layout_height="36dp"
+            android:text="+ Add Crop"
+            android:textSize="13sp"
+            android:backgroundTint="#388E3C"
+            android:layout_marginBottom="12dp"
+            style="@style/Widget.MaterialComponents.Button"/>
+
+        <TextView
+            android:id="@+id/monthTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:textColor="?attr/colorOnSurface"
+            android:gravity="center"
+            android:padding="12dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingVertical="8dp">
+
+            <TextView style="@style/WeekDayText" android:text="MON"/>
+            <TextView style="@style/WeekDayText" android:text="TUE"/>
+            <TextView style="@style/WeekDayText" android:text="WED"/>
+            <TextView style="@style/WeekDayText" android:text="THU"/>
+            <TextView style="@style/WeekDayText" android:text="FRI"/>
+            <TextView style="@style/WeekDayText" android:text="SAT"/>
+            <TextView style="@style/WeekDayText" android:text="SUN"/>
+
+        </LinearLayout>
+
+        <com.kizitonwose.calendar.view.CalendarView
+            android:id="@+id/calendarView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cv_dayViewResource="@layout/calendar_day" />
+
+    </LinearLayout>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

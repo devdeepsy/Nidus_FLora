@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:background="?attr/colorSurface"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="16dp">
+
+    <!-- Date Header -->
+    <TextView
+        android:id="@+id/dateHeaderText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text=" Activities on ..."
+        android:textStyle="bold"
+        android:textSize="18sp"
+        android:paddingBottom="8dp"
+        android:textColor="?attr/colorOnPrimary" />
+
+    <!-- RecyclerView for activities -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/activityRecyclerView"
+        android:layout_width="match_parent"
+        android:layout_height="300dp"
+        android:scrollbars="vertical"
+        android:clipToPadding="false"
+        android:paddingBottom="8dp" />
+
+    <!-- Add button -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/addActivityFab"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="end"
+        android:layout_marginTop="8dp"
+        android:src="@drawable/ic_add"
+        android:tint="?attr/colorOnPrimary"
+        app:backgroundTint="?attr/successColor"
+        android:contentDescription="Add Activity" />
+</LinearLayout>
