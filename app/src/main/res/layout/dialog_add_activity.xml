@@ -29,4 +29,23 @@
         android:inputType="textMultiLine"
         android:minLines="2"
         android:layout_marginTop="8dp" />
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Reminder (optional)"
+        android:textSize="13sp"
+        android:textColor="?attr/colorOnSurfaceVariant"
+        android:layout_marginTop="12dp"
+        android:layout_marginBottom="4dp"/>
+
+    <com.google.android.material.textfield.TextInputEditText
+        android:id="@+id/etReminderTime"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Tap to set reminder time"
+        android:focusable="false"
+        android:clickable="true"
+        android:inputType="none"
+        android:drawableEnd="@drawable/ic_notification"
+        android:paddingEnd="12dp"/>
 </LinearLayout>

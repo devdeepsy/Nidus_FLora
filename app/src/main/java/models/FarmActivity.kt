@@ -9,5 +9,6 @@ data class FarmActivity(
     val date: Long, // store as timestamp
     val crop: String,
     val activityType: String,
-    val notes: String? = null
+    val notes: String? = null,
+    val reminderTime: Long? = null
 )

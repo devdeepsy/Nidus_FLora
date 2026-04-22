@@ -223,14 +223,22 @@ class DiseaseFragment: Fragment(){
         val textMessage = JSONObject().apply {
             put("type", "text")
             put("text", """
-    You are an expert plant pathologist and botanist. Analyze this plant image and provide:
-    1. Crop/Plant identified (be specific, e.g. 'Wheat', 'Tomato', 'Rice' — say 'Unknown plant' if unsure)
-    2. Disease name (or 'Healthy' if no disease found)
-    3. Confidence level (High / Medium / Low)
-    4. Symptoms observed
-    5. Recommended treatment (use simple, locally available remedies where possible)
-    6. Prevention tips
-    Always start with the crop identification. Keep the response concise and practical for a home farmer in India.
+You are an expert plant pathologist and botanist.
+
+FIRST, determine if the image contains a plant, crop, leaf, or any vegetation.
+
+If the image does NOT contain a plant or crop, respond with ONLY this exact line:
+NOT_A_PLANT
+
+If it IS a plant, provide:
+1. Crop/Plant identified (be specific, e.g. 'Wheat', 'Tomato', 'Rice' — say 'Unknown plant' if unsure)
+2. Disease name (or 'Healthy' if no disease found)
+3. Confidence level (High / Medium / Low)
+4. Symptoms observed
+5. Recommended treatment (use simple, locally available remedies where possible)
+6. Prevention tips
+
+Always start with the crop identification. Keep the response concise and practical for a home farmer in India.
 """.trimIndent())
         }
 
@@ -278,8 +286,10 @@ class DiseaseFragment: Fragment(){
                 val result = callVisionAPI(base64)
 
                 withContext(Dispatchers.Main) {
+                    if (!result.contains("NOT_A_PLANT")){
                     incrementScanCount()
                     updateCounterUI()
+                    }
                     parseAndDisplayResult(result)
                     cardResult.visibility = View.VISIBLE
                     loadingOverlay.visibility = View.GONE
@@ -296,6 +306,15 @@ class DiseaseFragment: Fragment(){
         }
     }
     private fun parseAndDisplayResult(raw: String) {
+        val trimmed = raw.trim()
+
+        if (trimmed == "NOT_A_PLANT" || trimmed.contains("NOT_A_PLANT")) {
+            tvCropIdentified.text = "❌ Not a plant image"
+            tvDiseaseResult.text = ""
+            tvFullResult.text = "Please upload a clear photo of a plant, crop, or leaf for disease analysis."
+            return
+        }
+
         val lines = raw.trim().split("\n").map { it.trim() }.filter { it.isNotEmpty() }
 
         var cropLine = ""

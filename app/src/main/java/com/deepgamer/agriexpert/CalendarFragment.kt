@@ -33,6 +33,7 @@ import com.deepgamer.agriexpert.models.CropEntry
 import com.deepgamer.agriexpert.models.CropEntryDao
 import com.deepgamer.agriexpert.models.FarmActivity
 import com.deepgamer.agriexpert.models.FarmActivityDao
+import com.deepgamer.agriexpert.workers.ActivityReminderWorker
 
 class CalendarFragment : Fragment() {
 
@@ -161,6 +162,7 @@ class CalendarFragment : Fragment() {
 
         adapter.onDelete = { activity ->
             dao.deleteActivity(activity)
+            ActivityReminderWorker.cancel(requireContext(), activity.id)
             activityDates = reloadActivityDates()
             calendarView.notifyCalendarChanged()
             loadActivities()
@@ -383,9 +385,38 @@ class CalendarFragment : Fragment() {
         val dialogView = LayoutInflater.from(requireContext())
             .inflate(R.layout.dialog_add_activity, null)
 
-        val cropInput = dialogView.findViewById<EditText>(R.id.cropEditText)
-        val typeInput = dialogView.findViewById<EditText>(R.id.typeEditText)
-        val notesInput = dialogView.findViewById<EditText>(R.id.notesEditText)
+        val cropInput     = dialogView.findViewById<EditText>(R.id.cropEditText)
+        val typeInput     = dialogView.findViewById<EditText>(R.id.typeEditText)
+        val notesInput    = dialogView.findViewById<EditText>(R.id.notesEditText)
+        val etReminder    = dialogView.findViewById<TextInputEditText>(R.id.etReminderTime)
+
+        var pickedReminderMs: Long? = null
+
+        etReminder.setOnClickListener {
+            // Default to selected date at 8 AM
+            val cal = Calendar.getInstance().apply {
+                timeInMillis = selectedDate
+                set(Calendar.HOUR_OF_DAY, 8)
+                set(Calendar.MINUTE, 0)
+            }
+
+            android.app.TimePickerDialog(
+                requireContext(),
+                { _, hour, minute ->
+                    cal.set(Calendar.HOUR_OF_DAY, hour)
+                    cal.set(Calendar.MINUTE, minute)
+                    cal.set(Calendar.SECOND, 0)
+                    pickedReminderMs = cal.timeInMillis
+                    etReminder.setText(
+                        String.format("%02d:%02d on %s", hour, minute,
+                            SimpleDateFormat("dd MMM", Locale.getDefault()).format(cal.time))
+                    )
+                },
+                cal.get(Calendar.HOUR_OF_DAY),
+                cal.get(Calendar.MINUTE),
+                false
+            ).show()
+        }
 
         AlertDialog.Builder(requireContext())
             .setTitle("Add Activity")
@@ -399,17 +430,32 @@ class CalendarFragment : Fragment() {
                     .toEpochMilli()
 
                 val activity = FarmActivity(
-                    date = normalizedDate,
-                    crop = cropInput.text.toString(),
+                    date         = normalizedDate,
+                    crop         = cropInput.text.toString(),
                     activityType = typeInput.text.toString(),
-                    notes = notesInput.text.toString()
+                    notes        = notesInput.text.toString(),
+                    reminderTime = pickedReminderMs       // ← save reminder
                 )
 
                 dao.insertActivity(activity)
 
+                // Schedule reminder if user picked a time
+                pickedReminderMs?.let { reminderMs ->
+                    val inserted = dao.getLastInserted()  // see DAO note below
+                    if (inserted != null) {
+                        ActivityReminderWorker.schedule(
+                            context        = requireContext(),
+                            activityId     = inserted.id,
+                            crop           = inserted.crop,
+                            activityType   = inserted.activityType,
+                            notes          = inserted.notes ?: "",
+                            reminderTimeMs = reminderMs
+                        )
+                    }
+                }
+
                 activityDates = reloadActivityDates()
                 calendarView.notifyCalendarChanged()
-
                 onAdded()
             }
             .setNegativeButton("Cancel", null)

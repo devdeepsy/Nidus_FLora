@@ -22,4 +22,7 @@ interface FarmActivityDao {
     @Query("SELECT DISTINCT date FROM farm_activities")
     fun getAllActivityDates(): List<Long>
 
+    @Query("SELECT * FROM farm_activities ORDER BY id DESC LIMIT 1")
+    fun getLastInserted(): FarmActivity?
+
 }
