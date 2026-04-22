@@ -12,6 +12,8 @@ import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.deepgamer.agriexpert.store.StoreFragment
 import com.deepgamer.agriexpert.community.CommunityFragment
+import android.widget.ImageButton
+import com.google.firebase.auth.FirebaseAuth
 
 class MainActivity : AppCompatActivity() {
 
@@ -20,6 +22,9 @@ class MainActivity : AppCompatActivity() {
 
     // Track if chatbot is currently open
     private var isChatBotOpen = false
+
+    private lateinit var btnAccount: ImageButton
+    private var isUserSignedIn = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -35,6 +40,13 @@ class MainActivity : AppCompatActivity() {
 
         bottomNav = findViewById(R.id.bottom_navigation)
         fab       = findViewById(R.id.fab)
+        btnAccount = findViewById(R.id.btn_account)
+
+        updateAccountButton()
+
+        btnAccount.setOnClickListener {
+            showAccountDialog()
+        }
 
         // Load default fragment
         if (savedInstanceState == null) {
@@ -84,6 +96,7 @@ class MainActivity : AppCompatActivity() {
         isChatBotOpen = true
         bottomNav.visibility = View.GONE
         fab.visibility = View.GONE
+        btnAccount.visibility = View.GONE
 
         supportFragmentManager.beginTransaction()
             .replace(R.id.fragment_container, ChatBotFragment())
@@ -99,12 +112,13 @@ class MainActivity : AppCompatActivity() {
                     isChatBotOpen = false
                     bottomNav.visibility = View.VISIBLE
                     fab.visibility = View.VISIBLE
+                    btnAccount.visibility = View.VISIBLE
+                    updateAccountButton()
                     supportFragmentManager.removeOnBackStackChangedListener(this)
                 }
             }
         })
     }
-
 
     private fun closeChatBot() {
         supportFragmentManager.popBackStack()
@@ -114,10 +128,13 @@ class MainActivity : AppCompatActivity() {
     // ── Back press ───────────────────────────────────────────────────
 
     override fun onBackPressed() {
-        if (isChatBotOpen) {
-            closeChatBot()
-        } else {
-            super.onBackPressed()
+        when {
+            isChatBotOpen -> closeChatBot()
+            supportFragmentManager.backStackEntryCount > 0 -> {
+                supportFragmentManager.popBackStack()
+                updateAccountButton()
+            }
+            else -> super.onBackPressed()
         }
     }
 
@@ -175,4 +192,43 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
+
+    internal fun updateAccountButton() {
+        val user = FirebaseAuth.getInstance().currentUser
+
+        // Always clear tint first before Glide loads
+        androidx.core.widget.ImageViewCompat.setImageTintList(btnAccount, null)
+
+        if (user?.photoUrl != null) {
+            com.bumptech.glide.Glide.with(this)
+                .load(user.photoUrl)
+                .apply(
+                    com.bumptech.glide.request.RequestOptions()
+                        .circleCrop()
+                        .placeholder(R.drawable.ic_person_placholder)
+                        .error(R.drawable.ic_person_placholder)
+                )
+                .into(btnAccount)
+        } else {
+            // No photo — show person icon with white tint
+            btnAccount.setImageResource(R.drawable.ic_person_placholder)
+            androidx.core.widget.ImageViewCompat.setImageTintList(
+                btnAccount,
+                android.content.res.ColorStateList.valueOf(
+                    androidx.core.content.ContextCompat.getColor(this, android.R.color.white)
+                )
+            )
+        }
+    }
+
+    private fun showAccountDialog() {
+        // Don't hide the button — AccountFragment has its own close button
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.fragment_container, AccountFragment())
+            .addToBackStack("account")
+            .commit()
+    }
+
+
+
 }

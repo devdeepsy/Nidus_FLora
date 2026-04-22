@@ -96,16 +96,27 @@ class CommunityAdapter(
         // ── Post image ─────────────────────────────────────────────────────────
         if (!post.imageUrl.isNullOrBlank()) {
             holder.postImage.visibility = View.VISIBLE
-            Glide.with(holder.view)
-                .load(post.imageUrl)
-                .apply(RequestOptions().transform(RoundedCorners(16)))
-                .placeholder(R.drawable.ic_plant_placeholder)
-                .into(holder.postImage)
+
+            // Try Base64 first, fall back to URL
+            val isBase64 = !post.imageUrl.startsWith("http")
+            if (isBase64) {
+                try {
+                    val bytes = android.util.Base64.decode(post.imageUrl, android.util.Base64.DEFAULT)
+                    val bitmap = android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                    holder.postImage.setImageBitmap(bitmap)
+                } catch (e: Exception) {
+                    holder.postImage.visibility = View.GONE
+                }
+            } else {
+                Glide.with(holder.view)
+                    .load(post.imageUrl)
+                    .apply(RequestOptions().transform(RoundedCorners(16)))
+                    .placeholder(R.drawable.ic_plant_placeholder)
+                    .into(holder.postImage)
+            }
         } else {
             holder.postImage.visibility = View.GONE
         }
-
-        // ── Likes ──────────────────────────────────────────────────────────────
         // ── Likes ──────────────────────────────────────────────────────────────────
         holder.likeCount.text = formatCount(post.likesCount)
 

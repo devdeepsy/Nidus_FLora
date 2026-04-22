@@ -74,7 +74,8 @@ class CommunityRepository {
     suspend fun createPost(
         title: String,
         body: String,
-        tag: String
+        tag: String,
+        imageBase64: String? = null
     ): Result<String> {
         val user = auth.currentUser
             ?: return Result.failure(IllegalStateException("Not signed in"))
@@ -86,8 +87,8 @@ class CommunityRepository {
                 authorAvatarUrl = user.photoUrl?.toString() ?: "",
                 title = title,
                 body = body,
-                tag = tag
-                // createdAt is @ServerTimestamp — Firestore sets it
+                tag = tag ,
+                imageUrl = imageBase64
             )
             val docRef = postsRef.add(post).await()
             Result.success(docRef.id)

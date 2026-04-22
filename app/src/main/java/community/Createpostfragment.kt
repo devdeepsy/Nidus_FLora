@@ -23,15 +23,9 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.bumptech.glide.Glide
 import com.deepgamer.agriexpert.R
-import com.google.android.gms.auth.api.signin.GoogleSignIn
-import com.google.android.gms.auth.api.signin.GoogleSignInClient
-import com.google.android.gms.auth.api.signin.GoogleSignInOptions
-import com.google.android.gms.common.api.ApiException
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.GoogleAuthProvider
 import kotlinx.coroutines.launch
 import java.io.ByteArrayOutputStream
 
@@ -46,7 +40,6 @@ class CreatePostFragment : Fragment() {
     private lateinit var layoutSignedOut: View
     private lateinit var layoutSignedIn: View
     private lateinit var tvSignedInAs: TextView
-    private lateinit var btnGoogleSignIn: MaterialButton
     private lateinit var etTitle: EditText
     private lateinit var etBody: EditText
     private lateinit var chipGroupTags: ChipGroup
@@ -60,23 +53,6 @@ class CreatePostFragment : Fragment() {
 
     private var selectedImageBytes: ByteArray? = null
     private var selectedTag: PostTag = PostTag.QUESTION
-    private lateinit var googleSignInClient: GoogleSignInClient
-
-    // ─── Launchers ─────────────────────────────────────────────────────────────
-
-    private val signInLauncher =
-        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            if (result.resultCode == Activity.RESULT_OK) {
-                try {
-                    val account = GoogleSignIn
-                        .getSignedInAccountFromIntent(result.data)
-                        .getResult(ApiException::class.java)
-                    firebaseAuthWithGoogle(account.idToken!!)
-                } catch (e: ApiException) {
-                    Toast.makeText(requireContext(), "Sign-in failed: ${e.message}", Toast.LENGTH_SHORT).show()
-                }
-            }
-        }
 
     private val pickImageLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -97,14 +73,9 @@ class CreatePostFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         bindViews(view)
-        setupGoogleSignIn()
         setupTagChips()
         observeAuthState()
         observeSubmitState()
-
-        btnGoogleSignIn.setOnClickListener {
-            signInLauncher.launch(googleSignInClient.signInIntent)
-        }
 
         btnPickImage.setOnClickListener {
             val intent = Intent(Intent.ACTION_PICK).apply { type = "image/*" }
@@ -126,7 +97,6 @@ class CreatePostFragment : Fragment() {
         layoutSignedOut = view.findViewById(R.id.layout_signed_out)
         layoutSignedIn = view.findViewById(R.id.layout_signed_in)
         tvSignedInAs = view.findViewById(R.id.tv_signed_in_as)
-        btnGoogleSignIn = view.findViewById(R.id.btn_google_sign_in)
         etTitle = view.findViewById(R.id.et_post_title)
         etBody = view.findViewById(R.id.et_post_body)
         chipGroupTags = view.findViewById(R.id.chip_group_tags)
@@ -139,28 +109,6 @@ class CreatePostFragment : Fragment() {
 
     // ─── Google Sign-In ────────────────────────────────────────────────────────
 
-    private fun setupGoogleSignIn() {
-        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-            .requestIdToken(getString(R.string.default_web_client_id))
-            .requestEmail()
-            .build()
-        googleSignInClient = GoogleSignIn.getClient(requireActivity(), gso)
-    }
-
-    private fun firebaseAuthWithGoogle(idToken: String) {
-        val credential = GoogleAuthProvider.getCredential(idToken, null)
-        FirebaseAuth.getInstance().signInWithCredential(credential)
-            .addOnSuccessListener {
-                viewModel.onSignInSuccess()
-            }
-            .addOnFailureListener { e ->
-                Toast.makeText(
-                    requireContext(),
-                    "Authentication failed: ${e.message}",
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-    }
 
     // ─── Tags ──────────────────────────────────────────────────────────────────
 
@@ -240,8 +188,13 @@ class CreatePostFragment : Fragment() {
     }
 
     private fun compressImage(bitmap: Bitmap): ByteArray {
-        val maxDim = 1024
-        val scale = minOf(maxDim.toFloat() / bitmap.width, maxDim.toFloat() / bitmap.height, 1f)
+        // Hard cap at 600px to keep Base64 well under 1MB Firestore limit
+        val maxDim = 600
+        val scale = minOf(
+            maxDim.toFloat() / bitmap.width,
+            maxDim.toFloat() / bitmap.height,
+            1f
+        )
         val scaled = if (scale < 1f) {
             Bitmap.createScaledBitmap(
                 bitmap,
@@ -252,7 +205,14 @@ class CreatePostFragment : Fragment() {
         } else bitmap
 
         val out = ByteArrayOutputStream()
-        scaled.compress(Bitmap.CompressFormat.JPEG, 70, out)
+        // Try progressively lower quality until under 700KB
+        var quality = 60
+        do {
+            out.reset()
+            scaled.compress(Bitmap.CompressFormat.JPEG, quality, out)
+            quality -= 10
+        } while (out.size() > 700_000 && quality > 10)
+
         return out.toByteArray()
     }
 
@@ -275,6 +235,6 @@ class CreatePostFragment : Fragment() {
         // selectedImageBytes is preserved so wiring Storage later
         // is just one repository call away — no changes needed here
 
-        viewModel.submitPost(title, body, selectedTag.label)
+        viewModel.submitPost(title, body, selectedTag.label,selectedImageBytes)
     }
 }

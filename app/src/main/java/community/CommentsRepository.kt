@@ -37,11 +37,32 @@ class CommentsRepository {
 
     // ── add comment ───────────────────────────────────────────────────────────
     suspend fun addComment(postId: String, comment: Comment): Result<Unit> = runCatching {
+        // Get post author details first
+        val postSnap = postRef(postId).get().await()
+        val postAuthorUid = postSnap.getString("authorUid") ?: ""
+        val postTitle     = postSnap.getString("title") ?: "your post"
+
         val batch = db.batch()
-        val commentRef = commentsRef(postId).document()   // auto-id
+        val commentRef = commentsRef(postId).document()
         batch.set(commentRef, comment.copy(postId = postId))
         batch.update(postRef(postId), "commentCount", FieldValue.increment(1))
         batch.commit().await()
+
+        // Store notification data in Firestore for the post author
+        // (only if commenter is not the post author themselves)
+        if (postAuthorUid.isNotBlank() && postAuthorUid != comment.authorUid) {
+            db.collection("notifications").add(
+                mapOf(
+                    "recipientUid"  to postAuthorUid,
+                    "type"          to "comment",
+                    "postId"        to postId,
+                    "postTitle"     to postTitle,
+                    "commenterName" to comment.authorName,
+                    "createdAt"     to FieldValue.serverTimestamp(),
+                    "read"          to false
+                )
+            ).await()
+        }
     }
 
     // ── delete comment ────────────────────────────────────────────────────────

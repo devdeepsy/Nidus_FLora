@@ -15,25 +15,38 @@
         <LinearLayout
             android:id="@+id/layout_signed_out"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:orientation="vertical"
             android:gravity="center"
-            android:padding="32dp"
+            android:padding="48dp"
             android:visibility="gone">
+
+            <TextView
+                android:layout_width="56dp"
+                android:layout_height="56dp"
+                android:text="🔒"
+                android:textSize="40sp"
+                android:gravity="center"
+                android:layout_marginBottom="16dp"/>
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Sign in to share with the community"
-                android:textAppearance="?attr/textAppearanceTitleMedium"
-                android:layout_marginBottom="24dp"/>
+                android:text="Sign in to post"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="?attr/colorOnSurface"
+                android:gravity="center"
+                android:layout_marginBottom="8dp"/>
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btn_google_sign_in"
+            <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Sign in with Google"
-                app:icon="@drawable/ic_google"/>
+                android:text="Use the account button at the top right to sign in with Google."
+                android:textSize="14sp"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                android:gravity="center"
+                android:lineSpacingExtra="4dp"/>
 
         </LinearLayout>
 

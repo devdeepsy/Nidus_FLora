@@ -42,6 +42,8 @@ class CommunityFragment : Fragment() {
         tabLayout = view.findViewById(R.id.tabs_community)
         fab = view.findViewById(R.id.fab_new_post)
 
+        fab.show()
+
         setupViewPager()
         observeAuthState()
 
@@ -80,6 +82,20 @@ class CommunityFragment : Fragment() {
                     requireActivity().invalidateOptionsMenu()
                 }
             }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Refresh My Posts tab if user just signed in
+        val uid = viewModel.authState.value.uid
+        if (uid.isNotEmpty()) {
+            viewModel.loadMyPosts()
+        }
+        // Always refresh auth state from Firebase directly
+        val firebaseUser = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+        if (firebaseUser != null && !viewModel.authState.value.isSignedIn) {
+            viewModel.onSignInSuccess()
         }
     }
 }

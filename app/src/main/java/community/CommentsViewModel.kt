@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 // ── States ────────────────────────────────────────────────────────────────────
 
@@ -55,7 +56,7 @@ class CommentsViewModel(
     }
 
     // ── submit ────────────────────────────────────────────────────────────────
-    fun submitComment(text: String) {
+    fun submitComment(text: String, context: android.content.Context) {  // ← add context param
         val user = auth.currentUser ?: run {
             _submitState.value = SubmitCommentState.Error("sign_in_required")
             return
@@ -65,18 +66,40 @@ class CommentsViewModel(
 
         _submitState.value = SubmitCommentState.Loading
         val comment = Comment(
-            postId = postId,
-            authorUid = user.uid,
-            authorName = user.displayName ?: "Anonymous",
+            postId          = postId,
+            authorUid       = user.uid,
+            authorName      = user.displayName ?: "Anonymous",
             authorAvatarUrl = user.photoUrl?.toString() ?: "",
-            text = trimmed
+            text            = trimmed
         )
         viewModelScope.launch {
             val result = repository.addComment(postId, comment)
-            _submitState.value = if (result.isSuccess) {
-                SubmitCommentState.Success
+            if (result.isSuccess) {
+                _submitState.value = SubmitCommentState.Success
+
+                // Fire notification for post author
+                val postSnap = com.google.firebase.firestore.FirebaseFirestore
+                    .getInstance()
+                    .collection("community_posts")
+                    .document(postId)
+                    .get()
+                    .await()
+                val postTitle = postSnap.getString("title") ?: "a post"
+                val postAuthorUid = postSnap.getString("authorUid") ?: ""
+
+                // Only notify if commenter is not the post author
+                if (postAuthorUid != user.uid) {
+                    com.deepgamer.agriexpert.workers.CommentNotificationWorker.fire(
+                        context       = context,
+                        postId        = postId,
+                        postTitle     = postTitle,
+                        commenterName = user.displayName ?: "Someone"
+                    )
+                }
             } else {
-                SubmitCommentState.Error(result.exceptionOrNull()?.message ?: "Failed")
+                _submitState.value = SubmitCommentState.Error(
+                    result.exceptionOrNull()?.message ?: "Failed"
+                )
             }
         }
     }

@@ -26,17 +26,31 @@ class CommunityViewModel(
     private val repository: CommunityRepository
 ) : ViewModel() {
 
-    // ─── Auth ──────────────────────────────────────────────────────────────────
+    // ── ALL properties declared first ─────────────────────────────────
 
     private val _authState = MutableStateFlow(AuthState())
     val authState: StateFlow<AuthState> = _authState.asStateFlow()
 
+    private val _trendingState = MutableStateFlow<FeedState>(FeedState.Loading)
+    val trendingState: StateFlow<FeedState> = _trendingState.asStateFlow()
+
+    private val _recentState = MutableStateFlow<FeedState>(FeedState.Loading)
+    val recentState: StateFlow<FeedState> = _recentState.asStateFlow()
+
+    private val _myPostsState = MutableStateFlow<FeedState>(FeedState.Loading)
+    val myPostsState: StateFlow<FeedState> = _myPostsState.asStateFlow()
+
+    private val _submitState = MutableStateFlow<SubmitState>(SubmitState.Idle)
+    val submitState: StateFlow<SubmitState> = _submitState.asStateFlow()
+
+    // ── init AFTER all properties — never before ──────────────────────
     init {
-        // Restore session if user was already signed in before app launch
         repository.currentUser()?.let { user -> applyUser(user) }
         loadTrending()
         loadRecent()
     }
+
+    // ── Auth ──────────────────────────────────────────────────────────
 
     fun onSignInSuccess() {
         val user = repository.currentUser() ?: return
@@ -59,16 +73,7 @@ class CommunityViewModel(
         )
     }
 
-    // ─── Feed ──────────────────────────────────────────────────────────────────
-
-    private val _trendingState = MutableStateFlow<FeedState>(FeedState.Loading)
-    val trendingState: StateFlow<FeedState> = _trendingState.asStateFlow()
-
-    private val _recentState = MutableStateFlow<FeedState>(FeedState.Loading)
-    val recentState: StateFlow<FeedState> = _recentState.asStateFlow()
-
-    private val _myPostsState = MutableStateFlow<FeedState>(FeedState.Loading)
-    val myPostsState: StateFlow<FeedState> = _myPostsState.asStateFlow()
+    // ── Feed ──────────────────────────────────────────────────────────
 
     fun loadTrending() {
         viewModelScope.launch {
@@ -114,7 +119,7 @@ class CommunityViewModel(
         }
     }
 
-    // ─── Post Actions ──────────────────────────────────────────────────────────
+    // ── Post Actions ──────────────────────────────────────────────────
 
     sealed class SubmitState {
         object Idle : SubmitState()
@@ -123,13 +128,15 @@ class CommunityViewModel(
         data class Error(val message: String) : SubmitState()
     }
 
-    private val _submitState = MutableStateFlow<SubmitState>(SubmitState.Idle)
-    val submitState: StateFlow<SubmitState> = _submitState.asStateFlow()
-
-    fun submitPost(title: String, body: String, tag: String) {
+    fun submitPost(title: String, body: String, tag: String, imageBytes: ByteArray? = null) {
         viewModelScope.launch {
             _submitState.value = SubmitState.Loading
-            val result = repository.createPost(title, body, tag)
+            val base64Image = imageBytes?.let {
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    android.util.Base64.encodeToString(it, android.util.Base64.NO_WRAP)
+                }
+            }
+            val result = repository.createPost(title, body, tag, base64Image)
             _submitState.value = if (result.isSuccess) {
                 SubmitState.Success(result.getOrThrow())
             } else {
@@ -143,26 +150,18 @@ class CommunityViewModel(
     }
 
     fun toggleLike(postId: String) {
-        viewModelScope.launch {
-            repository.toggleLike(postId)
-            // No state update needed — Firestore snapshot listener
-            // in the repository will push the updated post automatically
-        }
+        viewModelScope.launch { repository.toggleLike(postId) }
     }
 
     fun deletePost(postId: String) {
-        viewModelScope.launch {
-            repository.deletePost(postId)
-            // Same — real-time listener handles UI update
-        }
+        viewModelScope.launch { repository.deletePost(postId) }
     }
 
-    // ─── Factory ───────────────────────────────────────────────────────────────
+    // ── Factory ───────────────────────────────────────────────────────
 
     class Factory : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return CommunityViewModel(CommunityRepository()) as T
-        }
+        override fun <T : ViewModel> create(modelClass: Class<T>): T =
+            CommunityViewModel(CommunityRepository()) as T
     }
 }

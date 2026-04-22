@@ -53,16 +53,6 @@
 
                 </LinearLayout>
 
-                <ImageButton
-                    android:id="@+id/btn_sign_out"
-                    android:layout_width="44dp"
-                    android:layout_height="44dp"
-                    android:src="@drawable/ic_logout"
-                    app:tint="?attr/colorOnPrimary"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="Sign out"
-                    android:visibility="gone"/>
-
             </LinearLayout>
         </com.google.android.material.appbar.MaterialToolbar>
 
@@ -92,13 +82,13 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
-        android:layout_margin="20dp"
+        android:layout_marginBottom="60dp"
+        android:layout_marginEnd="19dp"
         android:text="New Post"
         android:textColor="?attr/colorOnPrimary"
         app:icon="@drawable/ic_add"
         app:iconTint="?attr/colorOnPrimary"
         android:backgroundTint="?attr/colorPrimary"
-        android:visibility="visible"
-        app:layout_behavior="com.google.android.material.behavior.HideBottomViewOnScrollBehavior"/>
+        android:visibility="visible"/>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

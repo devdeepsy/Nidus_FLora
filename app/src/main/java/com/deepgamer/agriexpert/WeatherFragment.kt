@@ -149,6 +149,10 @@ class WeatherFragment : Fragment() {
         return view
     }
 
+    companion object {
+        private var sessionFetched = false
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         isFragmentAttached = true
@@ -180,18 +184,21 @@ class WeatherFragment : Fragment() {
     private fun fetchWeather(forceRefresh: Boolean = false) {
         if (!isFragmentAttached) return
 
-        if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
+        if (ActivityCompat.checkSelfPermission(
+                requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
             != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(requireActivity(),
+            ActivityCompat.requestPermissions(
+                requireActivity(),
                 arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), 1001)
             return
         }
 
-        // Serve from cache if fresh and not a manual pull-to-refresh
-        if (!forceRefresh && cache.isFresh()) {
+        // ── Use cache only when navigating back to weather in same session ──
+        // On cold start (sessionFetched = false) always hit the network
+        if (!forceRefresh && sessionFetched && cache.isFresh()) {
             val cachedJson = cache.getCachedJson()
             if (cachedJson != null) {
-                val cachedCity = cache.getCachedCity() ?: "Your Location"
+                currentCityName = cache.getCachedCity() ?: "Your Location"
                 parseAndDisplay(cachedJson)
                 swipeRefresh.isRefreshing = false
                 return
@@ -210,7 +217,10 @@ class WeatherFragment : Fragment() {
                 if (location != null) handleLocation(location)
                 else fusedLocationClient.lastLocation.addOnSuccessListener { lastLoc ->
                     if (lastLoc != null) handleLocation(lastLoc)
-                    else safeRunOnUI { hideLoading(); safeToast("Unable to get location.") }
+                    else safeRunOnUI {
+                        hideLoading()
+                        safeToast("Unable to get location.")
+                    }
                 }
             }
             .addOnFailureListener { e ->
@@ -250,6 +260,7 @@ class WeatherFragment : Fragment() {
                 }
                 // Save raw JSON to cache, then display it
                 val tip = extractTipFromJson(responseBody)
+                sessionFetched = true
                 cache.save(responseBody, tip ?: "", city = currentCityName)
                 parseAndDisplay(responseBody)
             }
