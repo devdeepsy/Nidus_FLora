@@ -82,7 +82,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
-        android:layout_marginBottom="60dp"
+        android:layout_marginBottom="83dp"
         android:layout_marginEnd="19dp"
         android:text="New Post"
         android:textColor="?attr/colorOnPrimary"

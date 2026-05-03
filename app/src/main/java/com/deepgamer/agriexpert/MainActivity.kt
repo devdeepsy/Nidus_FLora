@@ -87,7 +87,10 @@ class MainActivity : AppCompatActivity() {
 
     /** Use this from any fragment that needs to trigger navigation */
     fun navigateToFragment(fragment: Fragment) {
-        loadFragment(fragment)
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.fragment_container, fragment)
+            .addToBackStack(null)   // ← this is what was missing
+            .commit()
     }
 
     // ── ChatBot open / close ──────────────────────────────────────────
@@ -132,7 +135,9 @@ class MainActivity : AppCompatActivity() {
             isChatBotOpen -> closeChatBot()
             supportFragmentManager.backStackEntryCount > 0 -> {
                 supportFragmentManager.popBackStack()
-                updateAccountButton()
+                if (supportFragmentManager.backStackEntryCount == 1) {
+                    updateAccountButton()
+                }
             }
             else -> super.onBackPressed()
         }

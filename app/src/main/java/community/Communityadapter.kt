@@ -122,6 +122,8 @@ class CommunityAdapter(
 
         val isLiked = uid != null && uid in post.likedBy
 
+
+
 // FIX: use ImageViewCompat to set tint alongside the drawable
         val likeIcon = if (isLiked) R.drawable.ic_heart_filled else R.drawable.ic_hearts_favourite
         holder.btnLike.setImageResource(likeIcon)
@@ -146,6 +148,17 @@ class CommunityAdapter(
         holder.tvCommentCount.text = formatCount(post.commentCount)
         holder.btnComment.setOnClickListener {onCommentClicked(post)}
 
+
+        holder.postImage.setOnClickListener {
+            val data = post.imageUrl ?: return@setOnClickListener
+            // 'holder.view.context' is a Fragment/Activity context — cast to get fragmentManager
+            val fm = when (val ctx = holder.view.context) {
+                is androidx.fragment.app.FragmentActivity -> ctx.supportFragmentManager
+                else -> return@setOnClickListener
+            }
+            ImagePreviewFragment.newInstance(data)
+                .show(fm, "image_preview")
+        }
     }
 
     private fun formatCount(count: Int): String = when {
