@@ -2,10 +2,10 @@
 <resources>
     <style name="Theme.AgriExpert" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="colorPrimary">@color/Dark_green</item>
-        <item name="colorPrimaryVariant">@color/Dark_green</item>
+        <item name="colorPrimaryVariant">@color/Var_Dark_green</item>
         <item name="colorOnPrimary">@color/white</item>
-        <item name="colorSecondary">@color/light_green</item>
-        <item name="colorSecondaryVariant">@color/light_green</item>
+        <item name="colorSecondary">@color/Light_green</item>
+        <item name="colorSecondaryVariant">@color/Var_Light_green</item>
         <item name="colorOnSecondary">@color/white</item>
 
         <!-- Background colors -->

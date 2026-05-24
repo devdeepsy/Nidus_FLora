@@ -10,7 +10,8 @@
         android:layout_height="match_parent"
         android:gravity="center"
         android:textSize="14sp"
-        android:textColor="?attr/colorOnSurface"/>
+        android:textColor="?attr/colorPrimary"
+        android:forceDarkAllowed="true"/>
 
     <!-- DOT -->
     <View

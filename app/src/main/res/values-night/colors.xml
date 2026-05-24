@@ -2,7 +2,7 @@
 <resources>
     <!-- Primary Colors (Darker variants for dark mode) -->
     <color name="Dark_green">#1B5E20</color>
-    <color name="light_green">#388E3C</color>
+    <color name="Light_green">#388E3C</color>
 
     <!-- Neutral Colors -->
     <color name="white">#FFFFFF</color>

@@ -24,12 +24,13 @@
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
         android:windowSoftInputMode="adjustResize"
-        android:icon="@mipmap/logo_foreground"
-        android:roundIcon="@mipmap/logo_round"
+        android:icon="@mipmap/logo_new"
+
         android:supportsRtl="true"
         android:label="@string/app_name"
         android:theme="@style/Theme.AgriExpert"
         tools:targetApi="31">
+
 
         <!-- SplashActivity as the launcher -->
         <activity

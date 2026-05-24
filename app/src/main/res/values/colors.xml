@@ -2,7 +2,10 @@
 <resources>
     <!-- Primary Colors -->
     <color name="Dark_green">#2E7D32</color>
-    <color name="light_green">#4CAF50</color>
+    <color name="Var_Dark_green">#2E8D32</color>
+    <!-- Secondary Colors -->
+    <color name="Light_green">#4CAF50</color>
+    <color name="Var_Light_green">#4CAB50</color>
 
     <color name="ic_launcher_background">#2E7D32</color>
 
@@ -21,6 +24,9 @@
     <color name="text_secondary_light">#757575</color>
     <color name="text_hint_light">#9E9E9E</color>
 
+    <color name="teal_200">#FF03DAC5</color>
+    <color name="green_700">#FF1A5F20</color>
+
     <!-- Status Bar -->
     <color name="status_bar_light">#1B5E20</color>
 
@@ -34,17 +40,7 @@
 
     <!-- Weather Cards -->
     <color name="weather_card_light">#f6eed9</color>
-    <color name="weather_alert_light">#FFF3E0</color>
-
-    <!-- News Cards -->
-    <color name="news_card_light">#FFFFFF</color>
-
-    <!-- Market Price Table -->
-    <color name="table_header_light">#E8F5E8</color>
-    <color name="table_row_light">#FFFFFF</color>
-    <color name="table_stripe_light">#F5F5F5</color>
-    <color name="teal_200">#80CBC4</color>
-    <color name="green_700">#388E3C</color>
+    <color name="weather_alert_light">#FFF3E0</color><!-- Danger -->
 
     <!-- Semantic Colors -->
     <color name="success_green">#4CAF50</color>

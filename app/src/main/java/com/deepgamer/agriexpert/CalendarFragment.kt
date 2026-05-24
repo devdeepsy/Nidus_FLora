@@ -101,7 +101,7 @@ class CalendarFragment : Fragment() {
 
                 // Always reset reused views
                 container.textView.background = null
-                container.textView.setTextColor(Color.WHITE)
+                container.textView.setTextColor(Color.BLACK)
                 container.dot.visibility = View.GONE
 
                 if (day.position == DayPosition.MonthDate) {
