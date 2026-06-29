@@ -1,4 +1,4 @@
-package com.deepgamer.agriexpert.community
+package com.devdeepsy.nidusflora.community
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -13,14 +13,10 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.deepgamer.agriexpert.R
+import com.devdeepsy.nidusflora.R
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-/**
- * Shared base class for the three feed tabs.
- * Each subclass supplies the StateFlow to observe and its empty-state message.
- */
 abstract class BaseFeedFragment : Fragment() {
 
     protected val viewModel: CommunityViewModel by activityViewModels {

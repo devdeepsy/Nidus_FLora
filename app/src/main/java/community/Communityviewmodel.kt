@@ -1,4 +1,4 @@
-package com.deepgamer.agriexpert.community
+package com.devdeepsy.nidusflora.community
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider

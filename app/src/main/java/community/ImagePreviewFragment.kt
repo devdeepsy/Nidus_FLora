@@ -1,7 +1,6 @@
-package com.deepgamer.agriexpert.community
+package com.devdeepsy.nidusflora.community
 
 import android.graphics.BitmapFactory
-import android.graphics.Color
 import android.os.Bundle
 import android.util.Base64
 import android.view.*
@@ -10,7 +9,7 @@ import androidx.fragment.app.DialogFragment
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.bitmap.RoundedCorners
 import com.bumptech.glide.request.RequestOptions
-import com.deepgamer.agriexpert.R
+import com.devdeepsy.nidusflora.R
 import com.github.chrisbanes.photoview.PhotoView
 
 class ImagePreviewFragment : DialogFragment() {

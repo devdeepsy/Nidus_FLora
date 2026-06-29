@@ -21,6 +21,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "AgriExpert"
+rootProject.name = "Nidus FLora"
 include(":app")
  

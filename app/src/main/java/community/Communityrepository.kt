@@ -1,4 +1,4 @@
-package com.deepgamer.agriexpert.community
+package com.devdeepsy.nidusflora.community
 
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser

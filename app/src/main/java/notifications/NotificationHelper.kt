@@ -1,4 +1,4 @@
-package com.deepgamer.agriexpert.notifications
+package com.devdeepsy.nidusflora.notifications
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -7,8 +7,8 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import androidx.core.app.NotificationCompat
-import com.deepgamer.agriexpert.MainActivity
-import com.deepgamer.agriexpert.R
+import com.devdeepsy.nidusflora.MainActivity
+import com.devdeepsy.nidusflora.R
 
 object NotificationHelper {
 

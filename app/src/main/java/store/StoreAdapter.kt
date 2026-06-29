@@ -1,4 +1,4 @@
-package com.deepgamer.agriexpert.store
+package com.devdeepsy.nidusflora.store
 
 import android.view.LayoutInflater
 import android.view.View
@@ -10,7 +10,7 @@ import android.widget.TextView
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
-import com.deepgamer.agriexpert.R
+import com.devdeepsy.nidusflora.R
 import com.google.android.material.chip.Chip
 
 class StoreAdapter(

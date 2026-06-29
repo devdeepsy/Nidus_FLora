@@ -1,4 +1,4 @@
-package com.deepgamer.agriexpert.store
+package com.devdeepsy.nidusflora.store
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

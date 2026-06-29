@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "1011824829642",
+    "project_id": "nidus-flora",
+    "storage_bucket": "nidus-flora.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1011824829642:android:a25c5d4bcf3373d5238033",
+        "android_client_info": {
+          "package_name": "com.devdeepsy.nidusflora"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1011824829642-igerriu03e1u7cjda9hkv9a8ote95suk.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.devdeepsy.nidusflora",
+            "certificate_hash": "084b13bef642d9628bae6379166b6824f345fafc"
+          }
+        },
+        {
+          "client_id": "1011824829642-ik42gpfk3d7rl6eqrhvdb1ls9vv7vpus.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDqihjGexwLvjLejTBWRHBGIYcXV7RBTTo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1011824829642-ik42gpfk3d7rl6eqrhvdb1ls9vv7vpus.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

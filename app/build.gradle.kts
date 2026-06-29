@@ -6,11 +6,11 @@ plugins {
 }
 
 android {
-    namespace = "com.deepgamer.agriexpert"
+    namespace = "com.devdeepsy.nidusflora"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.deepgamer.agriexpert"
+        applicationId = "com.devdeepsy.agriexpert"
         minSdk = 28
         targetSdk = 35
         versionCode = 1
@@ -89,7 +89,4 @@ dependencies {
     implementation("com.google.android.gms:play-services-auth:21.2.0")
     implementation("com.google.firebase:firebase-auth-ktx:23.1.0")
     implementation ("com.github.chrisbanes:PhotoView:2.3.0")
-
-
-
 }

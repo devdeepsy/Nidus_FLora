@@ -1,4 +1,4 @@
-package com.deepgamer.agriexpert
+package com.devdeepsy.nidusflora
 
 import android.Manifest
 import android.app.AlertDialog
@@ -33,7 +33,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
 import androidx.fragment.app.Fragment
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-import com.deepgamer.agriexpert.workers.WeatherWorker
+import com.devdeepsy.nidusflora.workers.WeatherWorker
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority

@@ -1,4 +1,4 @@
-package com.deepgamer.agriexpert.store
+package com.devdeepsy.nidusflora.store
 
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ktx.firestore

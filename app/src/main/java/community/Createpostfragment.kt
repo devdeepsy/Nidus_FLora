@@ -1,4 +1,4 @@
-package com.deepgamer.agriexpert.community
+package com.devdeepsy.nidusflora.community
 
 import android.app.Activity
 import android.content.Intent
@@ -22,7 +22,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.bumptech.glide.Glide
-import com.deepgamer.agriexpert.R
+import com.devdeepsy.nidusflora.R
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup

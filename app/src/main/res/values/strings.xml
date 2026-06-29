@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">AgriExpert</string>
+    <string name="app_name">NidusFlora</string>
     <string name="no_data_available">No Data Available</string>
     <string name="fab_chat_description">Open chat</string>
     <string name="plant_image">Plant Image</string>

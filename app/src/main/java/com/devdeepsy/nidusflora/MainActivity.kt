@@ -1,4 +1,4 @@
-package com.deepgamer.agriexpert
+package com.devdeepsy.nidusflora
 
 import android.annotation.SuppressLint
 import android.os.Bundle
@@ -6,12 +6,12 @@ import android.view.MotionEvent
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
-import com.deepgamer.agriexpert.notifications.NotificationHelper
-import com.deepgamer.agriexpert.workers.WeatherWorker
+import com.devdeepsy.nidusflora.notifications.NotificationHelper
+import com.devdeepsy.nidusflora.workers.WeatherWorker
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
-import com.deepgamer.agriexpert.store.StoreFragment
-import com.deepgamer.agriexpert.community.CommunityFragment
+import com.devdeepsy.nidusflora.store.StoreFragment
+import com.devdeepsy.nidusflora.community.CommunityFragment
 import android.widget.ImageButton
 import com.google.firebase.auth.FirebaseAuth
 

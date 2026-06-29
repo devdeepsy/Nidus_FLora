@@ -1,4 +1,4 @@
-package com.deepgamer.agriexpert.store
+package com.devdeepsy.nidusflora.store
 
 data class StoreCategory(
     val categoryId: String = "",

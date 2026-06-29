@@ -1,9 +1,8 @@
-package com.deepgamer.agriexpert.notifications
+package com.devdeepsy.nidusflora.notifications
 
 import android.content.Context
 import androidx.work.Worker
 import androidx.work.WorkerParameters
-import com.deepgamer.agriexpert.notifications.NotificationHelper
 
 class WateringWorker(
     private val context: Context,

@@ -1,4 +1,4 @@
-package com.deepgamer.agriexpert
+package com.devdeepsy.nidusflora
 
 import android.R
 import android.app.AlertDialog
@@ -7,7 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import com.deepgamer.agriexpert.models.FarmActivity
+import com.devdeepsy.nidusflora.models.FarmActivity
 import java.text.SimpleDateFormat
 import java.util.Locale
 

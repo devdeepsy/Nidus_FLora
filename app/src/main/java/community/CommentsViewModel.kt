@@ -1,4 +1,4 @@
-package com.deepgamer.agriexpert.community
+package com.devdeepsy.nidusflora.community
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -89,7 +89,7 @@ class CommentsViewModel(
 
                 // Only notify if commenter is not the post author
                 if (postAuthorUid != user.uid) {
-                    com.deepgamer.agriexpert.workers.CommentNotificationWorker.fire(
+                    com.deepgamer.nidusflora.workers.CommentNotificationWorker.fire(
                         context       = context,
                         postId        = postId,
                         postTitle     = postTitle,

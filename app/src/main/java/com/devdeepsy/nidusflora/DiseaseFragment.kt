@@ -1,4 +1,4 @@
-package com.deepgamer.agriexpert
+package com.devdeepsy.nidusflora
 
 import android.Manifest
 import android.content.Context

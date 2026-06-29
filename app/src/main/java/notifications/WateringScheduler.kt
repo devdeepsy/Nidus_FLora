@@ -1,8 +1,8 @@
-package com.deepgamer.agriexpert.notifications
+package com.devdeepsy.nidusflora.notifications
 
 import android.content.Context
 import androidx.work.*
-import com.deepgamer.agriexpert.models.CropEntry
+import com.devdeepsy.nidusflora.models.CropEntry
 import java.util.concurrent.TimeUnit
 
 object WateringScheduler {

@@ -1,7 +1,7 @@
-package com.deepgamer.agriexpert
+package com.devdeepsy.nidusflora
 
 import android.Manifest
-import com.deepgamer.agriexpert.R
+import com.devdeepsy.nidusflora.R
 import android.app.Activity
 import android.content.Context
 import android.content.Intent

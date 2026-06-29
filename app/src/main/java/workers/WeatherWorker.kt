@@ -1,9 +1,9 @@
-package com.deepgamer.agriexpert.workers
+package com.devdeepsy.nidusflora.workers
 
 import android.content.Context
 import androidx.work.*
-import com.deepgamer.agriexpert.notifications.NotificationHelper
-import com.deepgamer.agriexpert.WeatherCache
+import com.devdeepsy.nidusflora.notifications.NotificationHelper
+import com.devdeepsy.nidusflora.WeatherCache
 import java.util.concurrent.TimeUnit
 
 /**

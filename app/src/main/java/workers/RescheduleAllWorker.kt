@@ -1,4 +1,4 @@
-package com.deepgamer.agriexpert.workers
+package com.devdeepsy.nidusflora.workers
 
 import android.content.Context
 import androidx.work.CoroutineWorker

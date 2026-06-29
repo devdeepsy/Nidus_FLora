@@ -1,4 +1,4 @@
-package  com.deepgamer.agriexpert.models
+package com.devdeepsy.nidusflora.models
 
 import androidx.room.*
 

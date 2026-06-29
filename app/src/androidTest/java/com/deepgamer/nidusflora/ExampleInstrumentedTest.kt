@@ -1,4 +1,4 @@
-package com.deepgamer.agriexpert
+package com.deepgamer.nidusflora
 
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4

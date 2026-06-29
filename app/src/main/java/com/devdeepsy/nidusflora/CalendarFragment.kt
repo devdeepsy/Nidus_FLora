@@ -1,4 +1,4 @@
-package com.deepgamer.agriexpert
+package com.devdeepsy.nidusflora
 
 import android.app.AlertDialog
 import android.app.DatePickerDialog
@@ -16,7 +16,7 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.deepgamer.agriexpert.notifications.WateringScheduler
+import com.devdeepsy.nidusflora.notifications.WateringScheduler
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.textfield.TextInputEditText
@@ -28,12 +28,12 @@ import java.text.SimpleDateFormat
 import java.time.*
 import java.time.format.DateTimeFormatter
 import java.util.*
-import com.deepgamer.agriexpert.models.AppDatabase
-import com.deepgamer.agriexpert.models.CropEntry
-import com.deepgamer.agriexpert.models.CropEntryDao
-import com.deepgamer.agriexpert.models.FarmActivity
-import com.deepgamer.agriexpert.models.FarmActivityDao
-import com.deepgamer.agriexpert.workers.ActivityReminderWorker
+import com.devdeepsy.nidusflora.models.AppDatabase
+import com.devdeepsy.nidusflora.models.CropEntry
+import com.devdeepsy.nidusflora.models.CropEntryDao
+import com.devdeepsy.nidusflora.models.FarmActivity
+import com.devdeepsy.nidusflora.models.FarmActivityDao
+import com.devdeepsy.nidusflora.workers.ActivityReminderWorker
 
 class CalendarFragment : Fragment() {
 

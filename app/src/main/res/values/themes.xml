@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.AgriExpert" parent="Theme.Material3.DayNight.NoActionBar">
+    <style name="Theme.NidusFlora" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="colorPrimary">@color/Dark_green</item>
         <item name="colorPrimaryVariant">@color/Var_Dark_green</item>
         <item name="colorOnPrimary">@color/white</item>
@@ -41,17 +41,17 @@
         <item name="android:statusBarColor">@color/Dark_green</item>
     </style>
 
-    <style name="Theme.AgriExpert.NoActionBar" parent="Theme.Material3.DayNight.NoActionBar">
+    <style name="Theme.NidusFlora.NoActionBar" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
     </style>
 
-    <style name="Theme.AgriExpert.SplashScreen" parent="Theme.Material3.DayNight.NoActionBar">
+    <style name="Theme.NidusFlora.SplashScreen" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="android:windowBackground">@color/white</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
     </style>
 
-    <style name="Widget.AgriExpert.BottomNavigationView" parent="Widget.Material3.BottomNavigationView">
+    <style name="Widget.NidusFlora.BottomNavigationView" parent="Widget.Material3.BottomNavigationView">
         <item name="backgroundTint">?attr/bottomNavBackground</item>
         <item name="itemIconTint">@drawable/bottom_nav_icon_tint</item>
         <item name="itemTextColor">@drawable/bottom_nav_icon_tint</item>

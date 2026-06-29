@@ -1,4 +1,4 @@
-package com.deepgamer.agriexpert
+package com.deepgamer.nidusflora
 
 import org.junit.Test
 

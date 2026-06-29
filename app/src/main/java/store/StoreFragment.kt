@@ -1,4 +1,4 @@
-package com.deepgamer.agriexpert.store
+package com.devdeepsy.nidusflora.store
 
 import android.content.Intent
 import android.net.Uri
@@ -15,7 +15,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.deepgamer.agriexpert.R
+import com.devdeepsy.nidusflora.R
 import kotlinx.coroutines.launch
 
 class StoreFragment : Fragment() {

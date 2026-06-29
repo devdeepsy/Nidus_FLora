@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Custom theme attributes for AgriExpert -->
+    <!-- Custom theme attributes for NidusFlora -->
     <attr name="weatherCardColor" format="color|reference"/>
     <attr name="colorSurface" format="color|reference"/>
     <attr name="colorOnSurface" format="color|reference"/>
