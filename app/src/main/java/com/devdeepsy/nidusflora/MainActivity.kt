@@ -2,6 +2,7 @@ package com.devdeepsy.nidusflora
 
 import android.annotation.SuppressLint
 import android.os.Bundle
+import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
@@ -14,9 +15,10 @@ import com.devdeepsy.nidusflora.store.StoreFragment
 import com.devdeepsy.nidusflora.community.CommunityFragment
 import android.widget.ImageButton
 import com.google.firebase.auth.FirebaseAuth
+import com.unity3d.ads.IUnityAdsInitializationListener
+import com.unity3d.ads.UnityAds
 
 class MainActivity : AppCompatActivity() {
-
     private lateinit var bottomNav: BottomNavigationView
     private lateinit var fab: FloatingActionButton
 
@@ -25,6 +27,8 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var btnAccount: ImageButton
     private var isUserSignedIn = false
+    private val unityGameId = "800078992"
+    private val testMode = true
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,6 +47,9 @@ class MainActivity : AppCompatActivity() {
         btnAccount = findViewById(R.id.btn_account)
 
         updateAccountButton()
+        AdManager.initialize(this) {
+            println("🚀 AdManager ready")
+        }
 
         btnAccount.setOnClickListener {
             showAccountDialog()
@@ -77,12 +84,17 @@ class MainActivity : AppCompatActivity() {
         makeFabDraggable()
     }
 
+    companion object {
+        private const val TAG = "NidusFloraLog"
+    }
+
     // ── Fragment loading ──────────────────────────────────────────────
 
     private fun loadFragment(fragment: Fragment) {
         supportFragmentManager.beginTransaction()
             .replace(R.id.fragment_container, fragment)
             .commit()
+        AdManager.showInterstitialIfAvailable(this)
     }
 
     /** Use this from any fragment that needs to trigger navigation */

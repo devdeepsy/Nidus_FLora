@@ -1,7 +1,6 @@
 package com.devdeepsy.nidusflora
 
 import android.Manifest
-import com.devdeepsy.nidusflora.R
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
@@ -49,6 +48,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.UUID
+import androidx.activity.result.contract.ActivityResultContracts
 
 class ChatBotFragment : Fragment() , TextToSpeech.OnInitListener{
     private lateinit var rvMessages: RecyclerView
@@ -757,7 +757,22 @@ class ChatBotFragment : Fragment() , TextToSpeech.OnInitListener{
                 .setTitle("Daily Limit Reached")
                 .setMessage("You've used all 8 free messages today.\n\nWatch a short ad to get +4 more messages. You can do this $remaining more time(s) today.")
                 .setPositiveButton("Watch Ad") { _, _ ->
-                    grantBonusMessages()
+                    AdManager.showRewardedVideo(
+                        requireActivity(),
+                        object : AdManager.RewardedAdCallback {
+                            override fun onRewardEarned() {
+                                grantBonusMessages()
+                            }
+
+                            override fun onAdFailedToShow() {
+                                Toast.makeText(
+                                    requireContext(),
+                                    "Ad not ready. Try again.",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        }
+                    )
                 }
                 .setNegativeButton("Maybe Later", null)
                 .show()

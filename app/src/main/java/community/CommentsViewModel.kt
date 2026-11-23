@@ -89,7 +89,7 @@ class CommentsViewModel(
 
                 // Only notify if commenter is not the post author
                 if (postAuthorUid != user.uid) {
-                    com.deepgamer.nidusflora.workers.CommentNotificationWorker.fire(
+                    com.devdeepsy.nidusflora.workers.CommentNotificationWorker.fire(
                         context       = context,
                         postId        = postId,
                         postTitle     = postTitle,

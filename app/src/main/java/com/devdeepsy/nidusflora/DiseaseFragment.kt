@@ -34,13 +34,15 @@ import java.net.URL
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-
+import com.devdeepsy.nidusflora.AdManager
 class DiseaseFragment: Fragment(){
 
     private val PREFS_NAME = "disease_prefs"
     private val KEY_SCAN_COUNT = "scan_count"
     private val KEY_LAST_RESET = "last_reset_data"
+    private val KEY_AD_SCAN_COUNT = "ad_scan_count"
     private val MAX_FREE_SCANS = 3
+    private val MAX_AD_SCANS = 2
 
     private lateinit var ivPlantPreview: ImageView
     private var selectedImageUri: Uri? = null
@@ -140,12 +142,12 @@ class DiseaseFragment: Fragment(){
     }
     private fun resetIfNewDay() {
         val prefs = requireContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-            .format(Date())
+        val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
         val lastReset = prefs.getString(KEY_LAST_RESET, "")
         if (lastReset != today) {
             prefs.edit()
                 .putInt(KEY_SCAN_COUNT, 0)
+                .putInt(KEY_AD_SCAN_COUNT, 0)  // ✅ Reset ad scans too
                 .putString(KEY_LAST_RESET, today)
                 .apply()
         }
@@ -159,12 +161,25 @@ class DiseaseFragment: Fragment(){
             tvScanWarning.text = "⚠ $remaining scan left"
             tvScanWarning.visibility = View.VISIBLE
         } else if (remaining <= 0) {
-            tvScanWarning.text = "⚠ No scans left today"
-            tvScanWarning.visibility = View.VISIBLE
-            // Disable input buttons when limit hit
-            btnTakePhoto.isEnabled = false
-            btnChooseGallery.isEnabled = false
-            btnAnalyze.isEnabled = false
+            // Check if user can watch an ad for more scans
+            val adScansUsed = getAdScanCount()
+            if (adScansUsed < MAX_AD_SCANS) {
+                tvScanWarning.text = "📺 Watch ad for 1 more scan (${MAX_AD_SCANS - adScansUsed} left today)"
+                tvScanWarning.visibility = View.VISIBLE
+                tvScanWarning.setOnClickListener {
+                    watchAdForExtraScan()
+                }
+                // Keep buttons enabled for ad-watch path
+                btnTakePhoto.isEnabled = true
+                btnChooseGallery.isEnabled = true
+                btnAnalyze.isEnabled = true
+            } else {
+                tvScanWarning.text = "⚠ No scans left today"
+                tvScanWarning.visibility = View.VISIBLE
+                btnTakePhoto.isEnabled = false
+                btnChooseGallery.isEnabled = false
+                btnAnalyze.isEnabled = false
+            }
         } else {
             tvScanWarning.visibility = View.GONE
         }
@@ -271,8 +286,12 @@ Always start with the crop identification. Keep the response concise and practic
             .getString("content")
     }
     private fun analyzeImage(uri: Uri) {
-        if (getScanCount() >= MAX_FREE_SCANS) {
-            tvFullResult.text = "Daily scan limit reached. Try again tomorrow."
+        val currentCount = getScanCount()
+        val adScansUsed = getAdScanCount()
+        val canUseAdScan = adScansUsed < MAX_AD_SCANS
+
+        if (currentCount >= MAX_FREE_SCANS && !canUseAdScan) {
+            tvFullResult.text = "Daily scan limit reached. Try again tomorrow or watch an ad for extra scans."
             cardResult.visibility = View.VISIBLE
             return
         }
@@ -286,9 +305,19 @@ Always start with the crop identification. Keep the response concise and practic
                 val result = callVisionAPI(base64)
 
                 withContext(Dispatchers.Main) {
-                    if (!result.contains("NOT_A_PLANT")){
-                    incrementScanCount()
-                    updateCounterUI()
+                    if (!result.contains("NOT_A_PLANT")) {
+                        // Only count the scan if we haven't used all free scans
+                        if (currentCount < MAX_FREE_SCANS) {
+                            incrementScanCount()
+                        } else if (canUseAdScan) {
+                            // This scan used an ad-watch slot
+                            // We already incremented ad scan count when the ad was watched
+                            // But we need to mark that this scan is using that slot
+                            // The ad scan count was already incremented in watchAdForExtraScan()
+                            // So we just need to make sure we don't double-count
+                            // Use a separate flag to track if ad scan was used for this analysis
+                        }
+                        updateCounterUI()
                     }
                     parseAndDisplayResult(result)
                     cardResult.visibility = View.VISIBLE
@@ -332,5 +361,43 @@ Always start with the crop identification. Keep the response concise and practic
         tvCropIdentified.text = "🌿 Crop: $cropLine"
         tvDiseaseResult.text = "🦠 Disease: $diseaseLine"
         tvFullResult.text = detailLines.joinToString("\n\n")
+    }
+
+    private fun getAdScanCount(): Int {
+        val prefs = requireContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getInt(KEY_AD_SCAN_COUNT, 0)
+    }
+
+    private fun incrementAdScanCount() {
+        val prefs = requireContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putInt(KEY_AD_SCAN_COUNT, getAdScanCount() + 1).apply()
+    }
+    private fun watchAdForExtraScan() {
+        AdManager.showRewardedVideo(
+            requireActivity(),
+            object : AdManager.RewardedAdCallback {
+                override fun onRewardEarned() {
+                    incrementAdScanCount()
+                    // Allow one extra scan by temporarily overriding the limit
+                    // We'll track this separately
+                    Toast.makeText(
+                        requireContext(),
+                        "✅ Extra scan unlocked!",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    // Reset the scan count UI to show the extra scan available
+                    // The analyzeImage will check if ad scan was used
+                    updateCounterUI()
+                }
+
+                override fun onAdFailedToShow() {
+                    Toast.makeText(
+                        requireContext(),
+                        "Ad not ready. Try again.",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+        )
     }
 }

@@ -8,10 +8,10 @@
             <InsightsFilterSettings>
               <option name="connection">
                 <ConnectionSetting>
-                  <option name="appId" value="PLACEHOLDER" />
-                  <option name="mobileSdkAppId" value="" />
-                  <option name="projectId" value="" />
-                  <option name="projectNumber" value="" />
+                  <option name="appId" value="com.devdeepsy.nidusflora" />
+                  <option name="mobileSdkAppId" value="1:1011824829642:android:a25c5d4bcf3373d5238033" />
+                  <option name="projectId" value="nidus-flora" />
+                  <option name="projectNumber" value="1011824829642" />
                 </ConnectionSetting>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />

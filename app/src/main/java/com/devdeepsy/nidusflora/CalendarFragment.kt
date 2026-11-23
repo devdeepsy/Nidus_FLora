@@ -34,13 +34,15 @@ import com.devdeepsy.nidusflora.models.CropEntryDao
 import com.devdeepsy.nidusflora.models.FarmActivity
 import com.devdeepsy.nidusflora.models.FarmActivityDao
 import com.devdeepsy.nidusflora.workers.ActivityReminderWorker
-
+import com.devdeepsy.nidusflora.AdManager
+import android.widget.FrameLayout
 class CalendarFragment : Fragment() {
 
     private lateinit var calendarView: CalendarView
     private lateinit var db: AppDatabase
     private lateinit var dao: FarmActivityDao
     private var activityDates: Set<LocalDate> = emptySet()
+    private lateinit var bannerContainer: FrameLayout
 
 
     private var selectedDate: Long = Calendar.getInstance().timeInMillis
@@ -65,12 +67,14 @@ class CalendarFragment : Fragment() {
         activityDates = reloadActivityDates()
         cropCardsContainer = view.findViewById(R.id.cropCardsContainer)
         btnAddCrop = view.findViewById(R.id.btnAddCrop)
+        bannerContainer = view.findViewById(R.id.banner_container)
         tvNoCrops = view.findViewById(R.id.tvNoCrops)
         cropEntryDao = db.cropEntryDao()
 
         btnAddCrop.setOnClickListener {
             showAddCropDialog()
         }
+
         loadCropCards()
         // When user taps a date
         val currentMonth = YearMonth.now()
@@ -492,5 +496,12 @@ class CalendarFragment : Fragment() {
             .setNegativeButton("Cancel", null)
             .show()
     }
-
+    override fun onResume() {
+        super.onResume()
+        AdManager.showBanner(requireActivity(), bannerContainer)
+    }
+    override fun onPause() {
+        super.onPause()
+        AdManager.hideBanner()
+    }
 }

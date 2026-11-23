@@ -10,7 +10,7 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.devdeepsy.agriexpert"
+        applicationId = "com.devdeepsy.nidusflora"
         minSdk = 28
         targetSdk = 35
         versionCode = 1
@@ -29,11 +29,11 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions {
-        jvmTarget = "11"
+        jvmTarget = "17"
     }
     buildFeatures {
         mlModelBinding = true
@@ -89,4 +89,5 @@ dependencies {
     implementation("com.google.android.gms:play-services-auth:21.2.0")
     implementation("com.google.firebase:firebase-auth-ktx:23.1.0")
     implementation ("com.github.chrisbanes:PhotoView:2.3.0")
+    implementation("com.unity3d.ads:unity-ads:4.12.0")
 }
