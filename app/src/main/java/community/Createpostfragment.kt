@@ -176,46 +176,63 @@ class CreatePostFragment : Fragment() {
     }
 
     // ─── Image ─────────────────────────────────────────────────────────────────
+    private suspend fun processPickedImage(uri: Uri): ByteArray? =
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            val resolver = requireContext().contentResolver
+
+            val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            resolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, bounds) }
+            if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return@withContext null
+
+            val maxDim = 600
+            var sampleSize = 1
+            while (bounds.outWidth / (sampleSize * 2) >= maxDim &&
+                bounds.outHeight / (sampleSize * 2) >= maxDim
+            ) {
+                sampleSize *= 2
+            }
+
+            val decodeOpts = BitmapFactory.Options().apply { inSampleSize = sampleSize }
+            val decoded = resolver.openInputStream(uri)?.use {
+                BitmapFactory.decodeStream(it, null, decodeOpts)
+            } ?: return@withContext null
+
+            val scale = minOf(
+                maxDim.toFloat() / decoded.width,
+                maxDim.toFloat() / decoded.height,
+                1f
+            )
+            val scaled = if (scale < 1f) {
+                Bitmap.createScaledBitmap(
+                    decoded,
+                    (decoded.width * scale).toInt().coerceAtLeast(1),
+                    (decoded.height * scale).toInt().coerceAtLeast(1),
+                    true
+                )
+            } else decoded
+
+            val out = ByteArrayOutputStream()
+            var quality = 60
+            do {
+                out.reset()
+                scaled.compress(Bitmap.CompressFormat.JPEG, quality, out)
+                quality -= 10
+            } while (out.size() > 450_000 && quality > 15)
+
+            if (scaled !== decoded) decoded.recycle()
+            out.toByteArray()
+        }
 
     private fun handleImagePicked(uri: Uri) {
-        val stream = requireContext().contentResolver.openInputStream(uri) ?: return
-        val original = BitmapFactory.decodeStream(stream)
-        selectedImageBytes = compressImage(original)
+        viewLifecycleOwner.lifecycleScope.launch {
+            val bytes = processPickedImage(uri) ?: return@launch
+            selectedImageBytes = bytes
 
-        Glide.with(this).load(uri).into(imgPreview)
-        imgPreview.visibility = View.VISIBLE
-        btnRemoveImage.visibility = View.VISIBLE
+            Glide.with(this@CreatePostFragment).load(uri).into(imgPreview)
+            imgPreview.visibility = View.VISIBLE
+            btnRemoveImage.visibility = View.VISIBLE
+        }
     }
-
-    private fun compressImage(bitmap: Bitmap): ByteArray {
-        // Hard cap at 600px to keep Base64 well under 1MB Firestore limit
-        val maxDim = 600
-        val scale = minOf(
-            maxDim.toFloat() / bitmap.width,
-            maxDim.toFloat() / bitmap.height,
-            1f
-        )
-        val scaled = if (scale < 1f) {
-            Bitmap.createScaledBitmap(
-                bitmap,
-                (bitmap.width * scale).toInt(),
-                (bitmap.height * scale).toInt(),
-                true
-            )
-        } else bitmap
-
-        val out = ByteArrayOutputStream()
-        // Try progressively lower quality until under 700KB
-        var quality = 60
-        do {
-            out.reset()
-            scaled.compress(Bitmap.CompressFormat.JPEG, quality, out)
-            quality -= 10
-        } while (out.size() > 700_000 && quality > 10)
-
-        return out.toByteArray()
-    }
-
     // ─── Submit ────────────────────────────────────────────────────────────────
 
     private fun submitPost() {

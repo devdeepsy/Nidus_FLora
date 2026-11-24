@@ -1,7 +1,7 @@
 package com.devdeepsy.nidusflora
 
 import android.Manifest
-import android.content.Context
+import android.content.ContentResolver
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -21,7 +21,7 @@ import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
-import kotlinx.coroutines.CoroutineScope
+import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -29,26 +29,15 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.io.ByteArrayOutputStream
 import java.io.File
+import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import com.devdeepsy.nidusflora.AdManager
-class DiseaseFragment: Fragment(){
+import kotlin.math.max
 
-    private val PREFS_NAME = "disease_prefs"
-    private val KEY_SCAN_COUNT = "scan_count"
-    private val KEY_LAST_RESET = "last_reset_data"
-    private val KEY_AD_SCAN_COUNT = "ad_scan_count"
-    private val MAX_FREE_SCANS = 3
-    private val MAX_AD_SCANS = 2
-
+class DiseaseFragment : Fragment() {
     private lateinit var ivPlantPreview: ImageView
     private var selectedImageUri: Uri? = null
     private var cameraImageUri: Uri? = null
-
-    private lateinit var TextView: TextView
     private lateinit var tvScanCounter: TextView
     private lateinit var tvScanWarning: TextView
     private lateinit var btnTakePhoto: Button
@@ -60,13 +49,69 @@ class DiseaseFragment: Fragment(){
     private lateinit var tvCropIdentified: TextView
     private lateinit var tvDiseaseResult: TextView
 
+    private val PROMPT = """
+You are an expert plant pathologist and botanist.
+
+FIRST, determine if the image contains a plant, crop, leaf, or any vegetation.
+
+If the image does NOT contain a plant or crop, respond with ONLY this exact line:
+NOT_A_PLANT
+
+If it IS a plant, answer in exactly this numbered format, one item per line:
+1. Crop: <specific crop name, or 'Unknown plant' if unsure>
+2. Disease: <disease name, or 'Healthy' if no disease found>
+3. Confidence: <High / Medium / Low>
+4. Symptoms: <what you observe>
+5. Treatment: <simple, locally available remedies where possible>
+6. Prevention: <prevention tips>
+
+Do not add any introduction or closing text. Keep it concise and practical for a home farmer in India.
+""".trimIndent()
+
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (!isAdded || context == null) return@registerForActivityResult
+        if (isGranted) {
+            Toast.makeText(context, "Permission granted! Tap again to take photo.", Toast.LENGTH_SHORT).show()
+        } else {
+            Toast.makeText(context, "Camera permission is required to diagnose plants.", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private val cameraLauncher = registerForActivityResult(
+        ActivityResultContracts.TakePicture()
+    ) { success ->
+        val uri = cameraImageUri
+        if (success && uri != null && isAdded) {
+            selectedImageUri = uri
+            ivPlantPreview.setImageURI(uri)
+            btnAnalyze.isEnabled = true
+        } else if (isAdded) {
+            cameraImageUri = null
+            if (selectedImageUri == uri) {
+                selectedImageUri = null
+                btnAnalyze.isEnabled = false
+            }
+        }
+    }
+
+    private val galleryLauncher = registerForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri ->
+        if (uri != null && isAdded) {
+            selectedImageUri = uri
+            ivPlantPreview.setImageURI(uri)
+            btnAnalyze.isEnabled = true
+        }
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
-        val view = inflater.inflate(R.layout.fragment_disease, container,false)
+    ): View {
+        val view = inflater.inflate(R.layout.fragment_disease, container, false)
 
         tvScanCounter = view.findViewById(R.id.tvScanCounter)
         tvScanWarning = view.findViewById(R.id.tvScanWarning)
@@ -80,28 +125,23 @@ class DiseaseFragment: Fragment(){
         tvCropIdentified = view.findViewById(R.id.tvCropIdentified)
         tvDiseaseResult = view.findViewById(R.id.tvDiseaseResult)
 
-
         btnTakePhoto.setOnClickListener {
-            // 1. Check if we already have permission
-            if (ContextCompat.checkSelfPermission(
-                    requireContext(),
-                    Manifest.permission.CAMERA
-                ) == PackageManager.PERMISSION_GRANTED
+            val ctx = context ?: return@setOnClickListener
+            if (ContextCompat.checkSelfPermission(ctx, Manifest.permission.CAMERA)
+                == PackageManager.PERMISSION_GRANTED
             ) {
-                // 2. Permission exists, run your existing logic
-                val imageFile = File(
-                    requireContext().cacheDir,
-                    "disease_images/plant_${System.currentTimeMillis()}.jpg"
-                ).also { it.parentFile?.mkdirs() }
+                cleanupOldDiseaseImages(keepUri = selectedImageUri)
 
-                cameraImageUri = FileProvider.getUriForFile(
-                    requireContext(),
-                    "${requireContext().packageName}.fileprovider",
+                val imageDir = File(ctx.cacheDir, "disease_images").apply { mkdirs() }
+                val imageFile = File(imageDir, "plant_${System.currentTimeMillis()}.jpg")
+                val uri = FileProvider.getUriForFile(
+                    ctx,
+                    "${ctx.packageName}.fileprovider",
                     imageFile
                 )
-                cameraLauncher.launch(cameraImageUri)
+                cameraImageUri = uri
+                cameraLauncher.launch(uri)
             } else {
-                // 3. Permission is missing, ask for it
                 requestPermissionLauncher.launch(Manifest.permission.CAMERA)
             }
         }
@@ -115,183 +155,167 @@ class DiseaseFragment: Fragment(){
             analyzeImage(uri)
         }
 
-        resetIfNewDay()
-        updateCounterUI()
-
         return view
     }
 
-    private val requestPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { isGranted: Boolean ->
-        if (isGranted) {
-            // Optional: Trigger the button click again or show a "Try again" message
-            Toast.makeText(context, "Permission granted! Tap again to take photo.", Toast.LENGTH_SHORT).show()
-        } else {
-            Toast.makeText(context, "Camera permission is required to diagnose plants.", Toast.LENGTH_LONG).show()
-        }
+    override fun onDestroyView() {
+        super.onDestroyView()
+        ivPlantPreview.setImageDrawable(null)
     }
 
-    private fun getScanCount(): Int{
-        val prefs= requireContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        return prefs.getInt(KEY_SCAN_COUNT ,0)
-    }
-    private fun incrementScanCount(){
-        val prefs = requireContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        prefs.edit().putInt(KEY_SCAN_COUNT, getScanCount() + 1).apply()
-    }
-    private fun resetIfNewDay() {
-        val prefs = requireContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-        val lastReset = prefs.getString(KEY_LAST_RESET, "")
-        if (lastReset != today) {
-            prefs.edit()
-                .putInt(KEY_SCAN_COUNT, 0)
-                .putInt(KEY_AD_SCAN_COUNT, 0)  // ✅ Reset ad scans too
-                .putString(KEY_LAST_RESET, today)
-                .apply()
-        }
-    }
-    private fun updateCounterUI() {
-        val count = getScanCount()
-        val remaining = MAX_FREE_SCANS - count
-        tvScanCounter.text = "Scans today: $count / $MAX_FREE_SCANS"
+    private fun cleanupOldDiseaseImages(keepUri: Uri?) {
+        val ctx = context ?: return
+        val dir = File(ctx.cacheDir, "disease_images")
+        if (!dir.exists() || !dir.isDirectory) return
 
-        if (remaining <= 1 && remaining > 0) {
-            tvScanWarning.text = "⚠ $remaining scan left"
-            tvScanWarning.visibility = View.VISIBLE
-        } else if (remaining <= 0) {
-            // Check if user can watch an ad for more scans
-            val adScansUsed = getAdScanCount()
-            if (adScansUsed < MAX_AD_SCANS) {
-                tvScanWarning.text = "📺 Watch ad for 1 more scan (${MAX_AD_SCANS - adScansUsed} left today)"
-                tvScanWarning.visibility = View.VISIBLE
-                tvScanWarning.setOnClickListener {
-                    watchAdForExtraScan()
-                }
-                // Keep buttons enabled for ad-watch path
-                btnTakePhoto.isEnabled = true
-                btnChooseGallery.isEnabled = true
-                btnAnalyze.isEnabled = true
-            } else {
-                tvScanWarning.text = "⚠ No scans left today"
-                tvScanWarning.visibility = View.VISIBLE
-                btnTakePhoto.isEnabled = false
-                btnChooseGallery.isEnabled = false
-                btnAnalyze.isEnabled = false
+        val keepNames = setOfNotNull(
+            keepUri?.lastPathSegment,
+            selectedImageUri?.lastPathSegment,
+            cameraImageUri?.lastPathSegment
+        )
+        dir.listFiles()?.forEach { file ->
+            if (file.isFile && file.name !in keepNames) {
+                file.delete()
             }
-        } else {
-            tvScanWarning.visibility = View.GONE
-        }
-    }
-    private val cameraLauncher = registerForActivityResult(
-        ActivityResultContracts.TakePicture()
-    ) { success ->
-        if (success && cameraImageUri != null) {
-            selectedImageUri = cameraImageUri
-            ivPlantPreview.setImageURI(selectedImageUri)
-            btnAnalyze.isEnabled = true
-        }
-    }
-    private val galleryLauncher = registerForActivityResult(
-        ActivityResultContracts.GetContent()
-    ) { uri ->
-        if (uri != null) {
-            selectedImageUri = uri
-            ivPlantPreview.setImageURI(selectedImageUri)
-            btnAnalyze.isEnabled = true
         }
     }
 
-    private fun compressImageToBase64(uri: Uri): String {
-        val inputStream = requireContext().contentResolver.openInputStream(uri)
-        val original = BitmapFactory.decodeStream(inputStream)
-
-        // Scale down to max 1024px on longest side
+    private fun calculateInSampleSize(width: Int, height: Int, reqMaxSide: Int): Int {
+        var inSampleSize = 1
+        val longestSide = max(width, height)
+        if (longestSide > reqMaxSide) {
+            val halfSide = longestSide / 2
+            while ((halfSide / inSampleSize) >= reqMaxSide) {
+                inSampleSize *= 2
+            }
+        }
+        return inSampleSize
+    }
+    private fun openImageStreamOrThrow(contentResolver: ContentResolver, uri: Uri) =
+        try {
+            contentResolver.openInputStream(uri)
+                ?: throw IOException("openInputStream returned null for uri=$uri (scheme=${uri.scheme})")
+        } catch (e: SecurityException) {
+            throw IOException("Permission denied opening uri=$uri (scheme=${uri.scheme})", e)
+        } catch (e: IOException) {
+            throw IOException("I/O error opening uri=$uri (scheme=${uri.scheme})", e)
+        }
+    private fun compressImageToBase64(contentResolver: ContentResolver, uri: Uri): String {
         val maxDim = 1024
-        val ratio = minOf(maxDim.toFloat() / original.width, maxDim.toFloat() / original.height)
-        val scaled = if (ratio < 1f) {
-            Bitmap.createScaledBitmap(
-                original,
-                (original.width * ratio).toInt(),
-                (original.height * ratio).toInt(),
-                true
-            )
-        } else original
 
-        val outputStream = ByteArrayOutputStream()
-        scaled.compress(Bitmap.CompressFormat.JPEG, 75, outputStream)
-        val bytes = outputStream.toByteArray()
-        return Base64.encodeToString(bytes, Base64.NO_WRAP)
+        val boundsOptions = BitmapFactory.Options().apply {
+            inJustDecodeBounds = true
+        }
+        openImageStreamOrThrow(contentResolver, uri).use { stream ->
+            BitmapFactory.decodeStream(stream, null, boundsOptions)
+        }
+
+        if (boundsOptions.outWidth <= 0 || boundsOptions.outHeight <= 0 || boundsOptions.outMimeType == null) {
+            throw IOException(
+                "Invalid/corrupt image bounds for uri=$uri: w=${boundsOptions.outWidth}, h=${boundsOptions.outHeight}, mime=${boundsOptions.outMimeType}"
+            )
+        }
+
+        val decodeOptions = BitmapFactory.Options().apply {
+            inSampleSize = calculateInSampleSize(boundsOptions.outWidth, boundsOptions.outHeight, maxDim)
+        }
+
+        val decoded = openImageStreamOrThrow(contentResolver, uri).use { stream ->
+            BitmapFactory.decodeStream(stream, null, decodeOptions)
+        } ?: throw IOException("BitmapFactory.decodeStream returned null for uri=$uri")
+
+        val ratio = minOf(maxDim.toFloat() / decoded.width, maxDim.toFloat() / decoded.height)
+        val finalBitmap = if (ratio < 1f) {
+            val targetW = (decoded.width * ratio).toInt().coerceAtLeast(1)
+            val targetH = (decoded.height * ratio).toInt().coerceAtLeast(1)
+            val scaled = Bitmap.createScaledBitmap(decoded, targetW, targetH, true)
+            if (scaled != decoded) {
+                decoded.recycle()
+            }
+            scaled
+        } else {
+            decoded
+        }
+
+        return try {
+            ByteArrayOutputStream().use { outputStream ->
+                if (!finalBitmap.compress(Bitmap.CompressFormat.JPEG, 75, outputStream)) {
+                    throw IOException("JPEG compression failed for uri=$uri")
+                }
+                Base64.encodeToString(outputStream.toByteArray(), Base64.NO_WRAP)
+            }
+        } finally {
+            finalBitmap.recycle()
+        }
     }
-    private fun callVisionAPI(base64Image: String): String {
-        val apiKey = "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"
+
+    private fun callVisionAPI(base64Image: String, apiKey: String): String {
         val url = URL("https://openrouter.ai/api/v1/chat/completions")
 
-        val imageMessage = JSONObject().apply {
-            put("type", "image_url")
-            put("image_url", JSONObject().apply {
-                put("url", "data:image/jpeg;base64,$base64Image")
-            })
-        }
-
-        val textMessage = JSONObject().apply {
+        val textPart = JSONObject().apply {
             put("type", "text")
-            put("text", """
-You are an expert plant pathologist and botanist.
-
-FIRST, determine if the image contains a plant, crop, leaf, or any vegetation.
-
-If the image does NOT contain a plant or crop, respond with ONLY this exact line:
-NOT_A_PLANT
-
-If it IS a plant, provide:
-1. Crop/Plant identified (be specific, e.g. 'Wheat', 'Tomato', 'Rice' — say 'Unknown plant' if unsure)
-2. Disease name (or 'Healthy' if no disease found)
-3. Confidence level (High / Medium / Low)
-4. Symptoms observed
-5. Recommended treatment (use simple, locally available remedies where possible)
-6. Prevention tips
-
-Always start with the crop identification. Keep the response concise and practical for a home farmer in India.
-""".trimIndent())
+            put("text", PROMPT)   // move your existing prompt string into a const PROMPT
+        }
+        val imagePart = JSONObject().apply {
+            put("type", "image_url")
+            put("image_url", JSONObject().put("url", "data:image/jpeg;base64,$base64Image"))
         }
 
         val body = JSONObject().apply {
-            put("model", "meta-llama/llama-3.2-11b-vision-instruct")
-            put("messages", JSONArray().apply {
-                put(JSONObject().apply {
+            put("model", "deepseek/deepseek-v4.1-flash-1017")
+            put("messages", JSONArray().put(
+                JSONObject().apply {
                     put("role", "user")
-                    put("content", JSONArray().apply {
-                        put(imageMessage)
-                        put(textMessage)
-                    })
-                })
-            })
-            put("max_tokens", 600)
+                    put("content", JSONArray().put(textPart).put(imagePart)) // text FIRST
+                }
+            ))
+            put("max_tokens", 1500)
         }
 
-        val connection = url.openConnection() as HttpURLConnection
-        connection.requestMethod = "POST"
-        connection.setRequestProperty("Authorization", "Bearer $apiKey")
-        connection.setRequestProperty("Content-Type", "application/json")
-        connection.doOutput = true
-        connection.outputStream.write(body.toString().toByteArray())
+        val connection = (url.openConnection() as HttpURLConnection).apply {
+            requestMethod = "POST"
+            connectTimeout = 15_000
+            readTimeout = 60_000
+            setRequestProperty("Authorization", "Bearer $apiKey")
+            setRequestProperty("Content-Type", "application/json")
+            doOutput = true
+        }
 
-        val response = connection.inputStream.bufferedReader().readText()
-        val json = JSONObject(response)
-        return json.getJSONArray("choices")
-            .getJSONObject(0)
-            .getJSONObject("message")
-            .getString("content")
+        return try {
+            connection.outputStream.use { it.write(body.toString().toByteArray(Charsets.UTF_8)) }
+
+            val code = connection.responseCode
+            val raw = if (code in 200..299) {
+                connection.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+            } else {
+                val err = connection.errorStream?.bufferedReader(Charsets.UTF_8)?.use { it.readText() } ?: "HTTP $code"
+                throw IOException("API request failed ($code): $err")
+            }
+
+            android.util.Log.d("DiseaseFragment", "RAW RESPONSE: ${raw.take(3000)}")
+
+            val json = JSONObject(raw)
+            json.optJSONObject("error")?.let {
+                throw IOException("API error: ${it.optString("message", it.toString())}")
+            }
+
+            val choice = json.getJSONArray("choices").getJSONObject(0)
+            val finish = choice.optString("finish_reason", "?")
+            val message = choice.getJSONObject("message")
+            val content = if (message.isNull("content")) "" else message.getString("content")
+
+            if (content.isBlank()) throw IOException("Model returned empty content (finish_reason=$finish)")
+            content
+        } finally {
+            connection.disconnect()
+        }
     }
-    private fun analyzeImage(uri: Uri) {
-        val currentCount = getScanCount()
-        val adScansUsed = getAdScanCount()
-        val canUseAdScan = adScansUsed < MAX_AD_SCANS
 
-        if (currentCount >= MAX_FREE_SCANS && !canUseAdScan) {
-            tvFullResult.text = "Daily scan limit reached. Try again tomorrow or watch an ad for extra scans."
+    private fun analyzeImage(uri: Uri) {
+        val resolver = context?.contentResolver ?: return
+        val apiKey = BuildConfig.OPENROUTER_API_KEY_DISEASE
+        if (apiKey.isBlank()) {
+            tvFullResult.text = "Error: Missing OPENROUTER_API_KEY_DISEASE in local.properties"
             cardResult.visibility = View.VISIBLE
             return
         }
@@ -299,34 +323,23 @@ Always start with the crop identification. Keep the response concise and practic
         loadingOverlay.visibility = View.VISIBLE
         btnAnalyze.isEnabled = false
 
-        CoroutineScope(Dispatchers.IO).launch {
+        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
             try {
-                val base64 = compressImageToBase64(uri)
-                val result = callVisionAPI(base64)
+                val base64 = compressImageToBase64(resolver, uri)
+                val result = callVisionAPI(base64, apiKey)
 
                 withContext(Dispatchers.Main) {
-                    if (!result.contains("NOT_A_PLANT")) {
-                        // Only count the scan if we haven't used all free scans
-                        if (currentCount < MAX_FREE_SCANS) {
-                            incrementScanCount()
-                        } else if (canUseAdScan) {
-                            // This scan used an ad-watch slot
-                            // We already incremented ad scan count when the ad was watched
-                            // But we need to mark that this scan is using that slot
-                            // The ad scan count was already incremented in watchAdForExtraScan()
-                            // So we just need to make sure we don't double-count
-                            // Use a separate flag to track if ad scan was used for this analysis
-                        }
-                        updateCounterUI()
-                    }
+                    if (!isAdded || view == null) return@withContext
                     parseAndDisplayResult(result)
                     cardResult.visibility = View.VISIBLE
                     loadingOverlay.visibility = View.GONE
                     btnAnalyze.isEnabled = true
                 }
             } catch (e: Exception) {
+                android.util.Log.e("DiseaseFragment", "analyzeImage failed for uri=$uri", e)
                 withContext(Dispatchers.Main) {
-                    tvFullResult.text = "Error: ${e.message}"
+                    if (!isAdded || view == null) return@withContext
+                    tvFullResult.text = "Error: ${e.message ?: e::class.java.simpleName}"
                     cardResult.visibility = View.VISIBLE
                     loadingOverlay.visibility = View.GONE
                     btnAnalyze.isEnabled = true
@@ -334,70 +347,33 @@ Always start with the crop identification. Keep the response concise and practic
             }
         }
     }
-    private fun parseAndDisplayResult(raw: String) {
-        val trimmed = raw.trim()
 
-        if (trimmed == "NOT_A_PLANT" || trimmed.contains("NOT_A_PLANT")) {
+    private fun parseAndDisplayResult(raw: String) {
+        val cleaned = raw.trim()
+        if (cleaned.contains("NOT_A_PLANT")) {
             tvCropIdentified.text = "❌ Not a plant image"
             tvDiseaseResult.text = ""
             tvFullResult.text = "Please upload a clear photo of a plant, crop, or leaf for disease analysis."
             return
         }
 
-        val lines = raw.trim().split("\n").map { it.trim() }.filter { it.isNotEmpty() }
+        val numbered = Regex("""^(\d)[.)]\s*(.*)$""")
+        var crop = ""
+        var disease = ""
+        val details = mutableListOf<String>()
 
-        var cropLine = ""
-        var diseaseLine = ""
-        val detailLines = mutableListOf<String>()
-
-        for (line in lines) {
-            when {
-                line.startsWith("1.") -> cropLine = line.removePrefix("1.").trim()
-                line.startsWith("2.") -> diseaseLine = line.removePrefix("2.").trim()
-                else -> detailLines.add(line)
+        cleaned.lines().map { it.replace("*", "").trim() }.filter { it.isNotEmpty() }.forEach { line ->
+            val m = numbered.find(line)
+            val rest = m?.groupValues?.get(2).orEmpty().substringAfter(":").trim()
+            when (m?.groupValues?.get(1)) {
+                "1" -> crop = rest
+                "2" -> disease = rest
+                else -> details.add(line)
             }
         }
 
-        tvCropIdentified.text = "🌿 Crop: $cropLine"
-        tvDiseaseResult.text = "🦠 Disease: $diseaseLine"
-        tvFullResult.text = detailLines.joinToString("\n\n")
-    }
-
-    private fun getAdScanCount(): Int {
-        val prefs = requireContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        return prefs.getInt(KEY_AD_SCAN_COUNT, 0)
-    }
-
-    private fun incrementAdScanCount() {
-        val prefs = requireContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        prefs.edit().putInt(KEY_AD_SCAN_COUNT, getAdScanCount() + 1).apply()
-    }
-    private fun watchAdForExtraScan() {
-        AdManager.showRewardedVideo(
-            requireActivity(),
-            object : AdManager.RewardedAdCallback {
-                override fun onRewardEarned() {
-                    incrementAdScanCount()
-                    // Allow one extra scan by temporarily overriding the limit
-                    // We'll track this separately
-                    Toast.makeText(
-                        requireContext(),
-                        "✅ Extra scan unlocked!",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                    // Reset the scan count UI to show the extra scan available
-                    // The analyzeImage will check if ad scan was used
-                    updateCounterUI()
-                }
-
-                override fun onAdFailedToShow() {
-                    Toast.makeText(
-                        requireContext(),
-                        "Ad not ready. Try again.",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-            }
-        )
+        tvCropIdentified.text = "🌿 Crop: ${crop.ifBlank { "Unknown" }}"
+        tvDiseaseResult.text = "🦠 Disease: ${disease.ifBlank { "Unknown" }}"
+        tvFullResult.text = if (crop.isBlank() && disease.isBlank()) cleaned else details.joinToString("\n\n")
     }
 }

@@ -44,11 +44,8 @@ import okhttp3.Response
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.IOException
-import java.text.SimpleDateFormat
-import java.util.Date
 import java.util.Locale
 import java.util.UUID
-import androidx.activity.result.contract.ActivityResultContracts
 
 class ChatBotFragment : Fragment() , TextToSpeech.OnInitListener{
     private lateinit var rvMessages: RecyclerView
@@ -89,20 +86,8 @@ class ChatBotFragment : Fragment() , TextToSpeech.OnInitListener{
     private val typingDots = arrayOf("Thinking", "Thinking.", "Thinking..", "Thinking...", "Thinking....", "Thinking.....")
     private var typingDotIndex = 1
     private var botName = "AgriBot"
-
-    private val PREFS_NAME = "chatbot_prefs"
-    private val KEY_MSG_COUNT = "msg_count"
-    private val KEY_BONUS_COUNT = "bonus_count"
-    private val KEY_AD_WATCHES = "ad_watches"
-    private val KEY_LAST_DATE = "last_reset_date"
-
-    private val FREE_LIMIT = 8
-    private val BONUS_PER_AD = 4
-    private val MAX_AD_WATCHES = 3
-
     private lateinit var messageCounterBar: LinearLayout
     private lateinit var tvMessageCounter: TextView
-    private lateinit var tvWatchAd: TextView
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -122,24 +107,12 @@ class ChatBotFragment : Fragment() , TextToSpeech.OnInitListener{
         stsButton = view.findViewById(R.id.stsButton)
         messageCounterBar = view.findViewById(R.id.messageCounterBar)
         tvMessageCounter = view.findViewById(R.id.tvMessageCounter)
-        tvWatchAd = view.findViewById(R.id.tvWatchAd)
 
         textToSpeech = TextToSpeech(requireContext(), this)
-        tvWatchAd.setOnClickListener {
-            checkAndResetIfNewDay()
-            val prefs = requireContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            val adWatches = prefs.getInt(KEY_AD_WATCHES, 0)
-            if (adWatches < MAX_AD_WATCHES) {
-                showLimitDialog()
-            } else {
-                Toast.makeText(requireContext(), "No more bonus messages today", Toast.LENGTH_SHORT).show()
-            }
-        }
         // Load saved chats and setup UI
         loadChats()
         setupRecyclerView()
         bindActions()
-        updateCounterUI()
 
         return view
     }
@@ -240,8 +213,12 @@ class ChatBotFragment : Fragment() , TextToSpeech.OnInitListener{
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == RQ_SPEECH_REC && resultCode == Activity.RESULT_OK) {
-            val result = data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
-            userInput.setText(result?.get(0) ?: "")
+            val spokenText = data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()
+            if (!spokenText.isNullOrBlank()) {
+                userInput.setText(spokenText)
+            }
+//            val result = data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+//            userInput.setText(result?.get(0) ?: "")
         }
     }
     private fun askSpeechInput() {
@@ -281,10 +258,10 @@ class ChatBotFragment : Fragment() , TextToSpeech.OnInitListener{
         // Update welcome message if it's the first message
         val messages = chatMessages[currentChatId]
         if (messages != null && messages.isNotEmpty()) {
-            val firstMessage = messages.firstOrNull { it.sender == Sender.ASSISTANT }
-            firstMessage?.let {
-                messages[0] = it.copy(text = getWelcomeMessage())
-                adapter.notifyItemChanged(0)
+            val firstAssistantIndex = messages.indexOfFirst { it.sender == Sender.ASSISTANT }
+            if (firstAssistantIndex != -1) {
+                messages[firstAssistantIndex] = messages[firstAssistantIndex].copy(text = getWelcomeMessage())
+                adapter.notifyItemChanged(firstAssistantIndex)
             }
         }
 
@@ -392,10 +369,6 @@ class ChatBotFragment : Fragment() , TextToSpeech.OnInitListener{
         }
     }
     private fun sendMessage() {
-        if (!canSendMessage()) {
-            showLimitDialog()
-            return
-        }
         val prompt = userInput.text.toString().trim()
         if (prompt.isEmpty()) {
             Toast.makeText(requireContext(), "Please enter a message", Toast.LENGTH_SHORT).show()
@@ -403,7 +376,6 @@ class ChatBotFragment : Fragment() , TextToSpeech.OnInitListener{
         }
 
         // Show user message instantly
-        recordMessageSent()
         val userMsg = ChatMessage(text = prompt, sender = Sender.USER)
         val messages = chatMessages.getOrPut(currentChatId) { mutableListOf() }
         messages.add(userMsg)
@@ -476,7 +448,6 @@ class ChatBotFragment : Fragment() , TextToSpeech.OnInitListener{
         }
 
         val chatTitles = chats.map { it.title }.toTypedArray()
-        val checkedItems = BooleanArray(chats.size) { false }
         var isSelectionMode = false
 
         val dialog = AlertDialog.Builder(requireContext())
@@ -604,7 +575,7 @@ class ChatBotFragment : Fragment() , TextToSpeech.OnInitListener{
 
         val request = Request.Builder()
             .url(url)
-            .addHeader("Authorization", "Bearer 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")
+            .addHeader("Authorization", "Bearer ${BuildConfig.OPENROUTER_API_KEY}")
             .addHeader("HTTP-Referer", "https://smartfarmhelper.app")
             .addHeader("X-Title", "SmartFarmHelper")
             .addHeader("Content-Type", "application/json")
@@ -652,6 +623,7 @@ class ChatBotFragment : Fragment() , TextToSpeech.OnInitListener{
             }
         })
     }
+
     private fun updateMessage(messageId: String, newText: String) {
         val messages = chatMessages[currentChatId] ?: return
         val index = messages.indexOfFirst { it.id == messageId }
@@ -718,110 +690,11 @@ class ChatBotFragment : Fragment() , TextToSpeech.OnInitListener{
     override fun onDestroy() {
         super.onDestroy()
         stopTypingAnimation()
-        typingAnimationHandler.removeCallbacksAndMessages(null)
-    }
-    private fun checkAndResetIfNewDay() {
-        val prefs = requireContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-        val lastDate = prefs.getString(KEY_LAST_DATE, "")
-        if (lastDate != today) {
-            prefs.edit()
-                .putInt(KEY_MSG_COUNT, 0)
-                .putInt(KEY_BONUS_COUNT, 0)
-                .putInt(KEY_AD_WATCHES, 0)
-                .putString(KEY_LAST_DATE, today)
-                .apply()
-        }
-    }
-    private fun canSendMessage(): Boolean {
-        checkAndResetIfNewDay()
-        val prefs = requireContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val count = prefs.getInt(KEY_MSG_COUNT, 0)
-        val bonus = prefs.getInt(KEY_BONUS_COUNT, 0)
-        return count < (FREE_LIMIT + bonus)
-    }
-    private fun recordMessageSent() {
-        val prefs = requireContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val count = prefs.getInt(KEY_MSG_COUNT, 0)
-        prefs.edit().putInt(KEY_MSG_COUNT, count + 1).apply()
-        updateCounterUI()
-    }
-    private fun showLimitDialog() {
-        checkAndResetIfNewDay()
-        val prefs = requireContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val adWatches = prefs.getInt(KEY_AD_WATCHES, 0)
-
-        if (adWatches < MAX_AD_WATCHES) {
-            val remaining = MAX_AD_WATCHES - adWatches
-            AlertDialog.Builder(requireContext())
-                .setTitle("Daily Limit Reached")
-                .setMessage("You've used all 8 free messages today.\n\nWatch a short ad to get +4 more messages. You can do this $remaining more time(s) today.")
-                .setPositiveButton("Watch Ad") { _, _ ->
-                    AdManager.showRewardedVideo(
-                        requireActivity(),
-                        object : AdManager.RewardedAdCallback {
-                            override fun onRewardEarned() {
-                                grantBonusMessages()
-                            }
-
-                            override fun onAdFailedToShow() {
-                                Toast.makeText(
-                                    requireContext(),
-                                    "Ad not ready. Try again.",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            }
-                        }
-                    )
-                }
-                .setNegativeButton("Maybe Later", null)
-                .show()
-        } else {
-            AlertDialog.Builder(requireContext())
-                .setTitle("Daily Limit Reached")
-                .setMessage("You've used all your messages for today, including bonus messages.\n\nCome back tomorrow for 8 fresh messages!")
-                .setPositiveButton("OK", null)
-                .show()
-        }
-    }
-    private fun grantBonusMessages() {
-        val prefs = requireContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val bonus = prefs.getInt(KEY_BONUS_COUNT, 0)
-        val watches = prefs.getInt(KEY_AD_WATCHES, 0)
-        prefs.edit()
-            .putInt(KEY_BONUS_COUNT, bonus + BONUS_PER_AD)
-            .putInt(KEY_AD_WATCHES, watches + 1)
-            .apply()
-        Toast.makeText(requireContext(), "+4 messages unlocked!", Toast.LENGTH_SHORT).show()
-        updateCounterUI()
-    }
-    private fun updateCounterUI() {
-        checkAndResetIfNewDay()
-        val prefs = requireContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val count = prefs.getInt(KEY_MSG_COUNT, 0)
-        val bonus = prefs.getInt(KEY_BONUS_COUNT, 0)
-        val adWatches = prefs.getInt(KEY_AD_WATCHES, 0)
-        val total = FREE_LIMIT + bonus
-        val remaining = (total - count).coerceAtLeast(0)
-
-        tvMessageCounter.text = "$remaining messages remaining today"
-
-        // Show/hide the watch ad button
-        if (adWatches < MAX_AD_WATCHES) {
-            tvWatchAd.visibility = View.VISIBLE
-        } else {
-            tvWatchAd.visibility = View.GONE
-        }
-
-        // Turn counter text red when low
-        if (remaining <= 2) {
-            tvMessageCounter.setTextColor(
-                ContextCompat.getColor(requireContext(), R.color.halo_red_light)
-            )
-        } else {
-            tvMessageCounter.setTextColor(
-                ContextCompat.getColor(requireContext(), R.color.gray)
-            )
+        uiHandler.removeCallbacksAndMessages(null)
+        if (::textToSpeech.isInitialized) {
+            textToSpeech.stop()
+            textToSpeech.shutdown()
+            isTtsInitialized = false
         }
     }
     // Data classes

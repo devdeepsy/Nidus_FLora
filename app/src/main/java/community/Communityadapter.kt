@@ -19,12 +19,19 @@ import com.devdeepsy.nidusflora.R
 import com.google.android.material.chip.Chip
 
 class CommunityAdapter(
-    private val currentUid: () -> String?,
+    private var currentUid: String? = null,
     private val onLikeClicked: (CommunityPost) -> Unit = {},
     private val onDeleteClicked: (CommunityPost) -> Unit = {},
     private val onPostClicked: (CommunityPost) -> Unit = {},
     private val onCommentClicked: (CommunityPost) -> Unit={}
 ) : ListAdapter<CommunityPost, CommunityAdapter.PostViewHolder>(DiffCallback) {
+
+    fun updateCurrentUid(newUid: String?) {
+        if (currentUid != newUid) {
+            currentUid = newUid
+            notifyItemRangeChanged(0, itemCount)
+        }
+    }
 
     companion object DiffCallback : DiffUtil.ItemCallback<CommunityPost>() {
         override fun areItemsTheSame(old: CommunityPost, new: CommunityPost) =
@@ -57,7 +64,7 @@ class CommunityAdapter(
 
     override fun onBindViewHolder(holder: PostViewHolder, position: Int) {
         val post = getItem(position)
-        val uid = currentUid()
+        val uid = currentUid
 
         // ── Author avatar ──────────────────────────────────────────────────────
         Glide.with(holder.view)
@@ -96,24 +103,16 @@ class CommunityAdapter(
         // ── Post image ─────────────────────────────────────────────────────────
         if (!post.imageUrl.isNullOrBlank()) {
             holder.postImage.visibility = View.VISIBLE
-
-            // Try Base64 first, fall back to URL
-            val isBase64 = !post.imageUrl.startsWith("http")
-            if (isBase64) {
-                try {
-                    val bytes = android.util.Base64.decode(post.imageUrl, android.util.Base64.DEFAULT)
-                    val bitmap = android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-                    holder.postImage.setImageBitmap(bitmap)
-                } catch (e: Exception) {
-                    holder.postImage.visibility = View.GONE
-                }
+            val glideModel: Any = if (!post.imageUrl.startsWith("http")) {
+                android.util.Base64.decode(post.imageUrl, android.util.Base64.DEFAULT)
             } else {
-                Glide.with(holder.view)
-                    .load(post.imageUrl)
-                    .apply(RequestOptions().transform(RoundedCorners(16)))
-                    .placeholder(R.drawable.ic_plant_placeholder)
-                    .into(holder.postImage)
+                post.imageUrl
             }
+            Glide.with(holder.view)
+                .load(glideModel)
+                .apply(RequestOptions().transform(RoundedCorners(16)))
+                .placeholder(R.drawable.ic_plant_placeholder)
+                .into(holder.postImage)
         } else {
             holder.postImage.visibility = View.GONE
         }

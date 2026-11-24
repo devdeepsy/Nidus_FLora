@@ -1,5 +1,6 @@
 package com.devdeepsy.nidusflora.store
 
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -25,6 +26,10 @@ class StoreFragment : Fragment() {
     private lateinit var progressBar: ProgressBar
 
     private val viewModel: StoreViewModel by viewModels()
+    private val sharedPool = RecyclerView.RecycledViewPool()
+
+    private lateinit var seasonalAdapter: ProductAdapter
+    private lateinit var categoryAdapter: StoreAdapter
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -41,9 +46,20 @@ class StoreFragment : Fragment() {
         rvCategories = view.findViewById(R.id.rvCategories)
         progressBar = view.findViewById(R.id.progressBarStore)
 
-        rvSeasonalPicks.layoutManager =
-            LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
-        rvCategories.layoutManager = LinearLayoutManager(requireContext())
+        seasonalAdapter = ProductAdapter(emptyList()) { openUrl(it.affiliateUrl) }
+        categoryAdapter = StoreAdapter(emptyList(), sharedPool) { openUrl(it.affiliateUrl) }
+
+        rvSeasonalPicks.apply {
+            layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
+            adapter = seasonalAdapter
+            setRecycledViewPool(sharedPool)
+            setHasFixedSize(true)
+        }
+
+        rvCategories.apply {
+            layoutManager = LinearLayoutManager(requireContext())
+            adapter = categoryAdapter
+        }
 
         observeStore()
     }
@@ -69,11 +85,12 @@ class StoreFragment : Fragment() {
                             rvSeasonalPicks.visibility = View.VISIBLE
                             rvCategories.visibility = View.VISIBLE
                             bindData(state.seasonalPicks, state.categories)
-                            // Silent fallback — no error toast, user sees data normally
                         }
                         is StoreState.Error -> {
                             progressBar.visibility = View.GONE
-                            Toast.makeText(requireContext(), state.message, Toast.LENGTH_SHORT).show()
+                            if (isAdded) {
+                                Toast.makeText(requireContext(), state.message, Toast.LENGTH_SHORT).show()
+                            }
                         }
                     }
                 }
@@ -82,17 +99,27 @@ class StoreFragment : Fragment() {
     }
 
     private fun bindData(picks: List<StoreProduct>, categories: List<StoreCategory>) {
-        rvSeasonalPicks.adapter = ProductAdapter(picks) { product ->
-            openUrl(product.affiliateUrl)
-        }
-        rvCategories.adapter = StoreAdapter(categories) { product ->
-            openUrl(product.affiliateUrl)
-        }
+        seasonalAdapter.updateItems(picks)
+        categoryAdapter.updateCategories(categories)
     }
 
     private fun openUrl(url: String) {
-        if (url == "#" || url.isEmpty()) return
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-        startActivity(intent)
+        if (url.isBlank() || url == "#") return
+        val uri = Uri.parse(url.trim())
+        val scheme = uri.scheme?.lowercase()
+        if (scheme != "http" && scheme != "https") return
+
+        val intent = Intent(Intent.ACTION_VIEW, uri).apply {
+            addCategory(Intent.CATEGORY_BROWSABLE)
+        }
+        try {
+            startActivity(intent)
+        } catch (_: ActivityNotFoundException) {
+            if (isAdded) {
+                Toast.makeText(requireContext(), "No browser available", Toast.LENGTH_SHORT).show()
+            }
+        } catch (_: Exception) {
+            // Prevent crash on malformed URI or restricted intent
+        }
     }
 }

@@ -93,7 +93,7 @@ class CommentsFragment : BottomSheetDialogFragment() {
     private fun postComment() {
         val text = etComment.text.toString()
         if (text.isBlank()) return
-        viewModel.submitComment(text, requireContext())
+        viewModel.submitComment(text, requireContext().applicationContext)
     }
 
     // ── State observers ───────────────────────────────────────────────────────

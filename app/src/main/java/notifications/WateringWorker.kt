@@ -5,17 +5,18 @@ import androidx.work.Worker
 import androidx.work.WorkerParameters
 
 class WateringWorker(
-    private val context: Context,
+    appContext: Context,
     workerParams: WorkerParameters
-) : Worker(context, workerParams) {
+) : Worker(appContext, workerParams) {
 
     override fun doWork(): Result {
-        val cropName = inputData.getString("crop_name") ?: "Your crop"
-        val cropId   = inputData.getInt("crop_id", 0)
+        val cropName = inputData.getString("crop_name")?.takeIf { it.isNotBlank() } ?: "Your crop"
+        val cropId = inputData.getInt("crop_id", 0)
 
+        NotificationHelper.createAllChannels(applicationContext)
         NotificationHelper.send(
-            context   = context,
-            notifId   = NotificationHelper.NOTIF_CALENDAR + cropId,
+            context   = applicationContext,
+            notifId   = NotificationHelper.calendarNotifId(cropId),
             channelId = NotificationHelper.CHANNEL_CALENDAR,
             title     = "💧 Time to water!",
             body      = "$cropName needs watering today."

@@ -1,25 +1,30 @@
 package com.devdeepsy.nidusflora.models
 
-import androidx.room.*
+import androidx.room.Dao
+import androidx.room.Delete
+import androidx.room.Insert
+import androidx.room.Query
+import androidx.room.Update
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface CropEntryDao {
 
     @Query("SELECT * FROM crop_entries ORDER BY sowingDate ASC")
-    fun getAllCrops(): List<CropEntry>
+    fun getAllCrops(): Flow<List<CropEntry>>
 
     @Insert
-    fun insertCrop(crop: CropEntry)
+    suspend fun insertCrop(crop: CropEntry)
 
     @Delete
-    fun deleteCrop(crop: CropEntry)
+    suspend fun deleteCrop(crop: CropEntry)
 
     @Update
-    fun updateCrop(crop: CropEntry)
+    suspend fun updateCrop(crop: CropEntry)
 
     @Query("SELECT COUNT(*) FROM crop_entries")
-    fun getCropCount(): Int
+    suspend fun getCropCount(): Int
 
     @Query("SELECT * FROM crop_entries WHERE cropName = :name ORDER BY id DESC LIMIT 1")
-    fun getCropByName(name: String): CropEntry?
+    suspend fun getCropByName(name: String): CropEntry?
 }

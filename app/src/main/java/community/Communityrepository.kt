@@ -29,7 +29,10 @@ class CommunityRepository {
             .orderBy("likesCount", Query.Direction.DESCENDING)
             .limit(50)
             .addSnapshotListener { snapshot, error ->
-                if (error != null) return@addSnapshotListener
+                if (error != null) {
+                    close(error)
+                    return@addSnapshotListener
+                }
                 trySend(
                     snapshot?.documents?.mapNotNull {
                         it.toObject(CommunityPost::class.java)
@@ -38,7 +41,6 @@ class CommunityRepository {
             }
         awaitClose { listener.remove() }
     }
-
     fun getRecentPosts(): Flow<List<CommunityPost>> = callbackFlow {
         val listener = postsRef
             .orderBy("createdAt", Query.Direction.DESCENDING)
@@ -58,8 +60,12 @@ class CommunityRepository {
         val listener = postsRef
             .whereEqualTo("authorUid", uid)
             .orderBy("createdAt", Query.Direction.DESCENDING)
+            .limit(50)
             .addSnapshotListener { snapshot, error ->
-                if (error != null) return@addSnapshotListener
+                if (error != null) {
+                    close(error)
+                    return@addSnapshotListener
+                }
                 trySend(
                     snapshot?.documents?.mapNotNull {
                         it.toObject(CommunityPost::class.java)

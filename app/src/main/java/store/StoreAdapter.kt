@@ -14,51 +14,70 @@ import com.devdeepsy.nidusflora.R
 import com.google.android.material.chip.Chip
 
 class StoreAdapter(
-    private val categories: List<StoreCategory>,
+    private var categories: List<StoreCategory>,
+    private val sharedRecycledViewPool: RecyclerView.RecycledViewPool = RecyclerView.RecycledViewPool(),
     private val onBuyClick: (StoreProduct) -> Unit
-) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+) : RecyclerView.Adapter<StoreAdapter.CategoryViewHolder>() {
 
-    companion object {
-        private const val VIEW_TYPE_CATEGORY = 0
+    fun updateCategories(newCategories: List<StoreCategory>) {
+        categories = newCategories
+        notifyDataSetChanged()
     }
 
-    override fun getItemCount() = categories.size
+    override fun getItemCount(): Int = categories.size
 
-    override fun getItemViewType(position: Int) = VIEW_TYPE_CATEGORY
-
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CategoryViewHolder {
         val view = LayoutInflater.from(parent.context)
             .inflate(R.layout.item_category_header, parent, false)
-        return CategoryViewHolder(view)
+        return CategoryViewHolder(view, sharedRecycledViewPool, onBuyClick)
     }
 
-    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-        (holder as CategoryViewHolder).bind(categories[position])
+    override fun onBindViewHolder(holder: CategoryViewHolder, position: Int) {
+        holder.bind(categories[position])
     }
 
-    inner class CategoryViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+    class CategoryViewHolder(
+        view: View,
+        recycledPool: RecyclerView.RecycledViewPool,
+        onBuyClick: (StoreProduct) -> Unit
+    ) : RecyclerView.ViewHolder(view) {
         private val tvEmoji: TextView = view.findViewById(R.id.tvCategoryEmoji)
         private val tvName: TextView = view.findViewById(R.id.tvCategoryName)
         private val rvProducts: RecyclerView = view.findViewById(R.id.rvCategoryProducts)
+        private val productAdapter = ProductAdapter(emptyList(), onBuyClick)
+
+        init {
+            rvProducts.layoutManager = LinearLayoutManager(
+                view.context,
+                LinearLayoutManager.HORIZONTAL,
+                false
+            ).apply {
+                initialPrefetchItemCount = 4
+            }
+            rvProducts.setRecycledViewPool(recycledPool)
+            rvProducts.setHasFixedSize(true)
+            rvProducts.adapter = productAdapter
+        }
 
         fun bind(category: StoreCategory) {
             tvEmoji.text = category.emoji
             tvName.text = category.categoryName
-            rvProducts.layoutManager = LinearLayoutManager(
-                itemView.context, LinearLayoutManager.HORIZONTAL, false
-            )
-            rvProducts.adapter = ProductAdapter(category.products, onBuyClick)
+            productAdapter.updateItems(category.products)
         }
     }
 }
 
-// Inner adapter for the horizontal product list inside each category
 class ProductAdapter(
-    private val products: List<StoreProduct>,
+    private var products: List<StoreProduct>,
     private val onBuyClick: (StoreProduct) -> Unit
 ) : RecyclerView.Adapter<ProductAdapter.ProductViewHolder>() {
 
-    override fun getItemCount() = products.size
+    fun updateItems(newProducts: List<StoreProduct>) {
+        products = newProducts
+        notifyDataSetChanged()
+    }
+
+    override fun getItemCount(): Int = products.size
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ProductViewHolder {
         val view = LayoutInflater.from(parent.context)
@@ -85,7 +104,6 @@ class ProductAdapter(
             tvPrice.text = product.price
             rating.rating = product.rating
 
-            // Badge chip — only show if badge text exists
             if (product.badge.isNotEmpty()) {
                 chip.visibility = View.VISIBLE
                 chip.text = product.badge
@@ -93,11 +111,11 @@ class ProductAdapter(
                 chip.visibility = View.GONE
             }
 
-            // Glide image load with placeholder
-            Glide.with(itemView.context)
-                .load(product.imageUrl)
+            Glide.with(itemView)
+                .load(product.imageUrl.ifBlank { null })
                 .centerCrop()
                 .placeholder(R.drawable.ic_launcher_background)
+                .error(R.drawable.ic_launcher_background)
                 .into(img)
 
             btnBuy.setOnClickListener { onBuyClick(product) }

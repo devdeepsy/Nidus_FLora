@@ -44,41 +44,48 @@ abstract class BaseFeedFragment : Fragment() {
         emptyView = view.findViewById(R.id.tv_feed_empty)
 
         adapter = CommunityAdapter(
-            currentUid = { viewModel.authState.value.uid.ifEmpty { null } },
+            currentUid = viewModel.authState.value.uid.ifEmpty { null },
             onLikeClicked = { post -> viewModel.toggleLike(post.id) },
             onDeleteClicked = { post -> viewModel.deletePost(post.id) },
-            onCommentClicked = {post->openComments(post)}
+            onCommentClicked = { post -> openComments(post) }
         )
         recycler.layoutManager = LinearLayoutManager(requireContext())
         recycler.adapter = adapter
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                feedState.collect { state ->
-                    when (state) {
-                        is FeedState.Loading -> {
-                            progressBar.visibility = View.VISIBLE
-                            recycler.visibility = View.GONE
-                            emptyView.visibility = View.GONE
-                        }
-                        is FeedState.Success -> {
-                            progressBar.visibility = View.GONE
-                            if (state.posts.isEmpty()) {
+                launch {
+                    feedState.collect { state ->
+                        when (state) {
+                            is FeedState.Loading -> {
+                                progressBar.visibility = View.VISIBLE
+                                recycler.visibility = View.GONE
+                                emptyView.visibility = View.GONE
+                            }
+                            is FeedState.Success -> {
+                                progressBar.visibility = View.GONE
+                                if (state.posts.isEmpty()) {
+                                    recycler.visibility = View.GONE
+                                    emptyView.visibility = View.VISIBLE
+                                    emptyView.text = emptyMessage
+                                } else {
+                                    recycler.visibility = View.VISIBLE
+                                    emptyView.visibility = View.GONE
+                                    adapter.submitList(state.posts)
+                                }
+                            }
+                            is FeedState.Error -> {
+                                progressBar.visibility = View.GONE
                                 recycler.visibility = View.GONE
                                 emptyView.visibility = View.VISIBLE
-                                emptyView.text = emptyMessage
-                            } else {
-                                recycler.visibility = View.VISIBLE
-                                emptyView.visibility = View.GONE
-                                adapter.submitList(state.posts)
+                                emptyView.text = "Couldn't load posts.\n${state.message}"
                             }
                         }
-                        is FeedState.Error -> {
-                            progressBar.visibility = View.GONE
-                            recycler.visibility = View.GONE
-                            emptyView.visibility = View.VISIBLE
-                            emptyView.text = "Couldn't load posts.\n${state.message}"
-                        }
+                    }
+                }
+                launch {
+                    viewModel.authState.collect { auth ->
+                        adapter.updateCurrentUid(auth.uid.ifEmpty { null })
                     }
                 }
             }

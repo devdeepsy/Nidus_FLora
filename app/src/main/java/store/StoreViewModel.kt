@@ -13,7 +13,6 @@ sealed class StoreState {
         val categories: List<StoreCategory>
     ) : StoreState()
     data class Error(val message: String) : StoreState()
-    // Fallback = loaded from hardcoded data, not Firestore
     data class Fallback(
         val seasonalPicks: List<StoreProduct>,
         val categories: List<StoreCategory>
@@ -32,17 +31,11 @@ class StoreViewModel : ViewModel() {
     fun loadStore() {
         viewModelScope.launch {
             _storeState.value = StoreState.Loading
-            try {
-                val picks = StoreRepository.fetchSeasonalPicks()
-                val categories = StoreRepository.fetchCategories()
-                _storeState.value = StoreState.Success(picks, categories)
-            } catch (e: Exception) {
-                // Should not reach here since repo catches internally,
-                // but just in case:
-                _storeState.value = StoreState.Fallback(
-                    StoreRepository.getSeasonalPicks(),
-                    StoreRepository.getCategories()
-                )
+            val result = StoreRepository.loadStoreData()
+            _storeState.value = if (result.isFallback) {
+                StoreState.Fallback(result.seasonalPicks, result.categories)
+            } else {
+                StoreState.Success(result.seasonalPicks, result.categories)
             }
         }
     }

@@ -9,7 +9,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
 
 // ── States ────────────────────────────────────────────────────────────────────
 
@@ -56,7 +55,8 @@ class CommentsViewModel(
     }
 
     // ── submit ────────────────────────────────────────────────────────────────
-    fun submitComment(text: String, context: android.content.Context) {  // ← add context param
+    fun submitComment(text: String, appContext: android.content.Context) {
+        val safeContext = appContext.applicationContext
         val user = auth.currentUser ?: run {
             _submitState.value = SubmitCommentState.Error("sign_in_required")
             return
@@ -66,33 +66,23 @@ class CommentsViewModel(
 
         _submitState.value = SubmitCommentState.Loading
         val comment = Comment(
-            postId          = postId,
-            authorUid       = user.uid,
-            authorName      = user.displayName ?: "Anonymous",
+            postId = postId,
+            authorUid = user.uid,
+            authorName = user.displayName ?: "Anonymous",
             authorAvatarUrl = user.photoUrl?.toString() ?: "",
-            text            = trimmed
+            text = trimmed
         )
         viewModelScope.launch {
             val result = repository.addComment(postId, comment)
             if (result.isSuccess) {
                 _submitState.value = SubmitCommentState.Success
+                val meta = result.getOrNull() ?: return@launch
 
-                // Fire notification for post author
-                val postSnap = com.google.firebase.firestore.FirebaseFirestore
-                    .getInstance()
-                    .collection("community_posts")
-                    .document(postId)
-                    .get()
-                    .await()
-                val postTitle = postSnap.getString("title") ?: "a post"
-                val postAuthorUid = postSnap.getString("authorUid") ?: ""
-
-                // Only notify if commenter is not the post author
-                if (postAuthorUid != user.uid) {
+                if (meta.postAuthorUid != user.uid) {
                     com.devdeepsy.nidusflora.workers.CommentNotificationWorker.fire(
-                        context       = context,
-                        postId        = postId,
-                        postTitle     = postTitle,
+                        context = safeContext,
+                        postId = postId,
+                        postTitle = meta.postTitle,
                         commenterName = user.displayName ?: "Someone"
                     )
                 }

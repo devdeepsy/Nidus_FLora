@@ -22,6 +22,14 @@
           }
         },
         {
+          "client_id": "1011824829642-pnjstf79qe8n48rjfavb47b21c83f5nq.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.devdeepsy.nidusflora",
+            "certificate_hash": "e8a95dc75453948e85feada77741b8517e9a8a32"
+          }
+        },
+        {
           "client_id": "1011824829642-ik42gpfk3d7rl6eqrhvdb1ls9vv7vpus.apps.googleusercontent.com",
           "client_type": 3
         }

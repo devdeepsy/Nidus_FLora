@@ -3,68 +3,97 @@ package com.devdeepsy.nidusflora.store
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.tasks.await
+
+data class StoreLoadResult(
+    val seasonalPicks: List<StoreProduct>,
+    val categories: List<StoreCategory>,
+    val isFallback: Boolean
+)
 
 object StoreRepository {
 
     private val db: FirebaseFirestore = Firebase.firestore
 
-    // ─── Firestore fetch ────────────────────────────────────────────────────
+    suspend fun loadStoreData(): StoreLoadResult = coroutineScope {
+        try {
+            val seasonalDeferred = async {
+                db.collection("store_products")
+                    .whereEqualTo("isSeasonal", true)
+                    .get()
+                    .await()
+                    .toObjects(StoreProduct::class.java)
+            }
 
-    suspend fun fetchSeasonalPicks(): List<StoreProduct> {
-        return try {
-            db.collection("store_products")
-                .whereEqualTo("isSeasonal", true)
-                .get()
-                .await()
-                .toObjects(StoreProduct::class.java)
-                .ifEmpty { getSeasonalPicksFallback() }
-        } catch (e: Exception) {
-            getSeasonalPicksFallback()
-        }
-    }
+            val categoryDocsDeferred = async {
+                db.collection("store_categories")
+                    .orderBy("displayOrder")
+                    .get()
+                    .await()
+                    .documents
+            }
 
-    suspend fun fetchCategories(): List<StoreCategory> {
-        return try {
-            // 1. Fetch all categories ordered by displayOrder
-            val categoryDocs = db.collection("store_categories")
-                .orderBy("displayOrder")
-                .get()
-                .await()
-                .documents
+            val nonSeasonalProductsDeferred = async {
+                db.collection("store_products")
+                    .whereEqualTo("isSeasonal", false)
+                    .get()
+                    .await()
+                    .toObjects(StoreProduct::class.java)
+            }
 
-            if (categoryDocs.isEmpty()) return getCategoriesFallback()
+            val seasonalPicks = seasonalDeferred.await()
+            val categoryDocs = categoryDocsDeferred.await()
+            val nonSeasonalProducts = nonSeasonalProductsDeferred.await()
 
-            // 2. Fetch all products in one query
-            val allProducts = db.collection("store_products")
-                .whereEqualTo("isSeasonal", false)
-                .get()
-                .await()
-                .toObjects(StoreProduct::class.java)
-
-            // 3. Group products by categoryId
-            val productsByCategory = allProducts.groupBy { it.categoryId }
-
-            // 4. Build StoreCategory list
-            categoryDocs.mapNotNull { doc ->
-                val catId = doc.id
-                StoreCategory(
-                    categoryId = catId,
-                    categoryName = doc.getString("categoryName") ?: return@mapNotNull null,
-                    emoji = doc.getString("emoji") ?: "",
-                    products = productsByCategory[catId] ?: emptyList()
+            if (seasonalPicks.isEmpty() || categoryDocs.isEmpty()) {
+                return@coroutineScope StoreLoadResult(
+                    seasonalPicks = seasonalPicks.ifEmpty { getSeasonalPicks() },
+                    categories = buildCategories(categoryDocs, nonSeasonalProducts).ifEmpty { getCategories() },
+                    isFallback = true
                 )
-            }.ifEmpty { getCategoriesFallback() }
+            }
 
-        } catch (e: Exception) {
-            getCategoriesFallback()
+            val categories = buildCategories(categoryDocs, nonSeasonalProducts)
+            if (categories.isEmpty()) {
+                return@coroutineScope StoreLoadResult(
+                    seasonalPicks = seasonalPicks,
+                    categories = getCategories(),
+                    isFallback = true
+                )
+            }
+
+            StoreLoadResult(
+                seasonalPicks = seasonalPicks,
+                categories = categories,
+                isFallback = false
+            )
+        } catch (_: Exception) {
+            StoreLoadResult(
+                seasonalPicks = getSeasonalPicks(),
+                categories = getCategories(),
+                isFallback = true
+            )
         }
     }
 
-    // ─── Hardcoded fallback (your existing data, kept intact) ───────────────
-
-    fun getSeasonalPicksFallback(): List<StoreProduct> = getSeasonalPicks()
-    fun getCategoriesFallback(): List<StoreCategory> = getCategories()
+    private fun buildCategories(
+        categoryDocs: List<com.google.firebase.firestore.DocumentSnapshot>,
+        products: List<StoreProduct>
+    ): List<StoreCategory> {
+        val productsByCategory = products.groupBy { it.categoryId }
+        return categoryDocs.mapNotNull { doc ->
+            val catId = doc.id
+            val name = doc.getString("categoryName") ?: return@mapNotNull null
+            StoreCategory(
+                categoryId = catId,
+                categoryName = name,
+                emoji = doc.getString("emoji") ?: "",
+                products = productsByCategory[catId] ?: emptyList()
+            )
+        }
+    }
 
     fun getSeasonalPicks(): List<StoreProduct> {
         return listOf(

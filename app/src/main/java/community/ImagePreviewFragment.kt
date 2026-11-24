@@ -43,18 +43,20 @@ class ImagePreviewFragment : DialogFragment() {
 
         val imageData = arguments?.getString(ARG_IMAGE) ?: return
 
-        val isBase64 = !imageData.startsWith("http")
-        if (isBase64) {
+        val model: Any = if (!imageData.startsWith("http")) {
             try {
-                val bytes  = Base64.decode(imageData, Base64.DEFAULT)
-                val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-                photoView.setImageBitmap(bitmap)
-            } catch (_: Exception) { dismiss() }
+                Base64.decode(imageData, Base64.DEFAULT)
+            } catch (_: Exception) {
+                dismiss()
+                return
+            }
         } else {
-            Glide.with(this)
-                .load(imageData)
-                .apply(RequestOptions().transform(RoundedCorners(0)))
-                .into(photoView)
+            imageData
         }
+
+        Glide.with(this)
+            .load(model)
+            .apply(RequestOptions().transform(RoundedCorners(0)))
+            .into(photoView)
     }
 }

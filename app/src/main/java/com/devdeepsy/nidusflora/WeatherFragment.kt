@@ -80,7 +80,7 @@ class WeatherFragment : Fragment() {
     // Holds the city name from geocoding so parseAndDisplay can use it
     private var currentCityName: String = "Your Location"
 
-    private val apiKey = "qSNDaR81BU7wRKDXCpdD4AATpq8dv5zo"
+    private val apiKey = BuildConfig.WEATHER_API_KEY
     private var isFragmentAttached = false
 
     override fun onCreateView(

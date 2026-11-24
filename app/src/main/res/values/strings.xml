@@ -5,5 +5,14 @@
     <string name="plant_image">Plant Image</string>
     <string name="table_content">Prices Table</string>
     <string name="default_web_client_id">1082704903426-2eo6ijllg41dno68252a9jf1srgl889s.apps.googleusercontent.com</string>
-
+    <string name="account_not_signed_in">Not signed in</string>
+    <string name="account_signed_out_status">Sign in to post in the Community,\nlike posts and leave comments.</string>
+    <string name="account_sign_in_google">Sign in with Google</string>
+    <string name="account_anonymous">Anonymous</string>
+    <string name="account_signed_in_status">You can post, like and comment\nin the Community.</string>
+    <string name="account_sign_out">Sign Out</string>
+    <string name="account_toast_signed_out">Signed out</string>
+    <string name="account_toast_signed_in_as">Signed in as %1$s</string>
+    <string name="account_toast_sign_in_failed">Sign-in failed: %1$s</string>
+    <string name="account_toast_auth_failed">Auth failed: %1$s</string>
 </resources>

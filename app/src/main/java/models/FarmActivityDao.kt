@@ -1,28 +1,35 @@
 package com.devdeepsy.nidusflora.models
 
-import androidx.room.*
+import androidx.room.Dao
+import androidx.room.Delete
+import androidx.room.Insert
+import androidx.room.Query
+import androidx.room.Update
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface FarmActivityDao {
-    @Query("""
-    SELECT * FROM farm_activities
-    WHERE date BETWEEN :startDate AND :endDate
-""")
-    fun getActivitiesByDate(startDate: Long, endDate: Long): List<FarmActivity>
 
+    @Query(
+        """
+        SELECT * FROM farm_activities
+        WHERE date BETWEEN :startDate AND :endDate
+        """
+    )
+    fun getActivitiesByDate(startDate: Long, endDate: Long): Flow<List<FarmActivity>>
 
     @Insert
-    fun insertActivity(activity: FarmActivity)
+    suspend fun insertActivity(activity: FarmActivity)
 
     @Delete
-    fun deleteActivity(activity: FarmActivity)
+    suspend fun deleteActivity(activity: FarmActivity)
 
     @Update
-    fun updateActivity(activity: FarmActivity)
+    suspend fun updateActivity(activity: FarmActivity)
+
     @Query("SELECT DISTINCT date FROM farm_activities")
-    fun getAllActivityDates(): List<Long>
+    fun getAllActivityDates(): Flow<List<Long>>
 
     @Query("SELECT * FROM farm_activities ORDER BY id DESC LIMIT 1")
-    fun getLastInserted(): FarmActivity?
-
+    suspend fun getLastInserted(): FarmActivity?
 }

@@ -41,5 +41,5 @@ class WeatherCache(context: Context) {
 
     fun getCachedTip(): String? = prefs.getString(KEY_TIP, null)
 
-    fun clear() = prefs.edit().clear().apply()
+
 }

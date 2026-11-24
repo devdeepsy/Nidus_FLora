@@ -5,7 +5,7 @@ import com.google.firebase.firestore.ServerTimestamp
 import com.google.firebase.Timestamp
 
 data class Comment (
-    @DocumentId val id:String =" ",
+    @DocumentId val id:String ="",
     val postId: String ="",
     val authorUid: String = "",
     val authorName: String = "",

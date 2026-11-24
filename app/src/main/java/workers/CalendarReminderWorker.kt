@@ -5,44 +5,52 @@ import androidx.work.*
 import com.devdeepsy.nidusflora.notifications.NotificationHelper
 import java.util.concurrent.TimeUnit
 
-/**
- * One-shot worker per calendar task. Schedule one when a task is created/updated.
- * CalendarFragment should call schedule() / cancel() directly.
- */
-class CalendarReminderWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx, params) {
+class CalendarReminderWorker(
+    appContext: Context,
+    params: WorkerParameters
+) : CoroutineWorker(appContext, params) {
 
     override suspend fun doWork(): Result {
-        val taskName  = inputData.getString(KEY_TASK_NAME)  ?: "Your crop task"
-        val taskNotes = inputData.getString(KEY_TASK_NOTES) ?: ""
-        val taskId    = inputData.getInt(KEY_TASK_ID, 0)
+        return try {
+            val taskName = inputData.getString(KEY_TASK_NAME)?.takeIf { it.isNotBlank() } ?: "Your crop task"
+            val taskNotes = inputData.getString(KEY_TASK_NOTES).orEmpty()
+            val taskId = inputData.getInt(KEY_TASK_ID, 0)
 
-        NotificationHelper.send(
-            context   = applicationContext,
-            notifId   = NotificationHelper.NOTIF_CALENDAR + taskId,
-            channelId = NotificationHelper.CHANNEL_CALENDAR,
-            title     = "Reminder: $taskName",
-            body      = taskNotes.ifBlank { "Time to tend to your crops!" }
-        )
-        return Result.success()
+            NotificationHelper.createAllChannels(applicationContext)
+            NotificationHelper.send(
+                context = applicationContext,
+                notifId = NotificationHelper.calendarNotifId(taskId),
+                channelId = NotificationHelper.CHANNEL_CALENDAR,
+                title = "Reminder: $taskName",
+                body = taskNotes.ifBlank { "Time to tend to your crops!" }
+            )
+            Result.success()
+        } catch (_: Exception) {
+            Result.failure()
+        }
     }
 
     companion object {
-        const val KEY_TASK_ID    = "task_id"
-        const val KEY_TASK_NAME  = "task_name"
+        const val KEY_TASK_ID = "task_id"
+        const val KEY_TASK_NAME = "task_name"
         const val KEY_TASK_NOTES = "task_notes"
 
         fun workTag(taskId: Int) = "calendar_task_$taskId"
 
-        /**
-         * Schedule a one-shot reminder.
-         * @param delayMillis how many ms from now to fire.
-         */
-        fun schedule(context: Context, taskId: Int, taskName: String, taskNotes: String, delayMillis: Long) {
-            if (delayMillis <= 0) return
+        private fun uniqueWorkName(taskId: Int) = "calendar_task_work_$taskId"
+
+        fun schedule(
+            context: Context,
+            taskId: Int,
+            taskName: String,
+            taskNotes: String,
+            delayMillis: Long
+        ) {
+            if (delayMillis <= 0L) return
 
             val data = workDataOf(
-                KEY_TASK_ID    to taskId,
-                KEY_TASK_NAME  to taskName,
+                KEY_TASK_ID to taskId,
+                KEY_TASK_NAME to taskName,
                 KEY_TASK_NOTES to taskNotes
             )
             val request = OneTimeWorkRequestBuilder<CalendarReminderWorker>()
@@ -51,22 +59,25 @@ class CalendarReminderWorker(ctx: Context, params: WorkerParameters) : Coroutine
                 .addTag(workTag(taskId))
                 .build()
 
-            WorkManager.getInstance(context).enqueueUniqueWork(
-                workTag(taskId),
+            WorkManager.getInstance(context.applicationContext).enqueueUniqueWork(
+                uniqueWorkName(taskId),
                 ExistingWorkPolicy.REPLACE,
                 request
             )
         }
 
         fun cancel(context: Context, taskId: Int) {
-            WorkManager.getInstance(context).cancelAllWorkByTag(workTag(taskId))
+            WorkManager.getInstance(context.applicationContext)
+                .cancelUniqueWork(uniqueWorkName(taskId))
         }
 
-        /** Called by BootReceiver — re-read all pending tasks from Room and reschedule */
         fun scheduleAll(context: Context) {
-            // Room query happens in a coroutine; launch from a one-shot worker
             val request = OneTimeWorkRequestBuilder<RescheduleAllWorker>().build()
-            WorkManager.getInstance(context).enqueue(request)
+            WorkManager.getInstance(context.applicationContext).enqueueUniqueWork(
+                "reschedule_all_calendar_tasks",
+                ExistingWorkPolicy.REPLACE,
+                request
+            )
         }
     }
 }

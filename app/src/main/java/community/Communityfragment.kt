@@ -17,7 +17,6 @@ import com.google.android.material.floatingactionbutton.ExtendedFloatingActionBu
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
 import kotlinx.coroutines.launch
-import com.devdeepsy.nidusflora.AdManager
 import android.widget.FrameLayout
 
 class CommunityFragment : Fragment() {
@@ -29,7 +28,6 @@ class CommunityFragment : Fragment() {
     private lateinit var viewPager: ViewPager2
     private lateinit var tabLayout: TabLayout
     private lateinit var fab: ExtendedFloatingActionButton
-    private lateinit var bannerContainer: FrameLayout
 
     private val tabTitles = listOf("🔥 Trending", "🕐 Recent", "👤 My Posts")
 
@@ -38,13 +36,16 @@ class CommunityFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View = inflater.inflate(R.layout.fragment_community, container, false)
 
+    interface PostNavigationHost {
+        fun openCreatePost()
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
         viewPager = view.findViewById(R.id.vp_community)
         tabLayout = view.findViewById(R.id.tabs_community)
         fab = view.findViewById(R.id.fab_new_post)
-        bannerContainer = view.findViewById(R.id.banner_container)
 
         fab.show()
 
@@ -53,6 +54,12 @@ class CommunityFragment : Fragment() {
 
         fab.setOnClickListener {
             (requireActivity() as MainActivity).navigateToFragment(CreatePostFragment())
+            val host = activity as? PostNavigationHost
+            if (host != null) {
+                host.openCreatePost()
+            } else {
+                (activity as? MainActivity)?.navigateToFragment(CreatePostFragment())
+            }
         }
 
         viewPager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
@@ -91,7 +98,6 @@ class CommunityFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
-        AdManager.showBanner(requireActivity(), bannerContainer)
         val uid = viewModel.authState.value.uid
         if (uid.isNotEmpty()) {
             viewModel.loadMyPosts()
@@ -105,6 +111,5 @@ class CommunityFragment : Fragment() {
 
     override fun onPause() {
         super.onPause()
-        AdManager.hideBanner()
     }
 }

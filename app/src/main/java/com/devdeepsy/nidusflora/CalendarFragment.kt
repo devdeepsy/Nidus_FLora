@@ -2,6 +2,7 @@ package com.devdeepsy.nidusflora
 
 import android.app.AlertDialog
 import android.app.DatePickerDialog
+import android.app.TimePickerDialog
 import android.graphics.Color
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -9,33 +10,48 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
+import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.devdeepsy.nidusflora.notifications.WateringScheduler
-import com.google.android.material.bottomsheet.BottomSheetDialog
-import com.google.android.material.floatingactionbutton.FloatingActionButton
-import com.google.android.material.textfield.TextInputEditText
-import com.kizitonwose.calendar.core.*
-import com.kizitonwose.calendar.view.CalendarView
-import com.kizitonwose.calendar.view.MonthDayBinder
-import com.kizitonwose.calendar.view.ViewContainer
-import java.text.SimpleDateFormat
-import java.time.*
-import java.time.format.DateTimeFormatter
-import java.util.*
 import com.devdeepsy.nidusflora.models.AppDatabase
 import com.devdeepsy.nidusflora.models.CropEntry
 import com.devdeepsy.nidusflora.models.CropEntryDao
 import com.devdeepsy.nidusflora.models.FarmActivity
 import com.devdeepsy.nidusflora.models.FarmActivityDao
+import com.devdeepsy.nidusflora.notifications.WateringScheduler
 import com.devdeepsy.nidusflora.workers.ActivityReminderWorker
-import com.devdeepsy.nidusflora.AdManager
-import android.widget.FrameLayout
+import com.google.android.material.bottomsheet.BottomSheetDialog
+import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.google.android.material.textfield.TextInputEditText
+import com.kizitonwose.calendar.core.CalendarDay
+import com.kizitonwose.calendar.core.DayPosition
+import com.kizitonwose.calendar.view.CalendarView
+import com.kizitonwose.calendar.view.MonthDayBinder
+import com.kizitonwose.calendar.view.ViewContainer
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.text.SimpleDateFormat
+import java.time.DayOfWeek
+import java.time.Instant
+import java.time.LocalDate
+import java.time.YearMonth
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
+import java.util.concurrent.TimeUnit
+
 class CalendarFragment : Fragment() {
 
     private lateinit var calendarView: CalendarView
@@ -43,110 +59,131 @@ class CalendarFragment : Fragment() {
     private lateinit var dao: FarmActivityDao
     private var activityDates: Set<LocalDate> = emptySet()
     private lateinit var bannerContainer: FrameLayout
-
-
     private var selectedDate: Long = Calendar.getInstance().timeInMillis
     private lateinit var cropEntryDao: CropEntryDao
     private lateinit var cropCardsContainer: LinearLayout
     private lateinit var btnAddCrop: Button
     private lateinit var tvNoCrops: TextView
-    private val sdf = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
 
+    private val sdf = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
+    private val monthYearFormatter = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.getDefault())
     private var pickedSowingDate: Long = 0L
     private var pickedHarvestDate: Long = 0L
 
     override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
+        inflater: LayoutInflater,
+        container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
         val view = inflater.inflate(R.layout.fragment_calendar, container, false)
 
         calendarView = view.findViewById(R.id.calendarView)
-        db = AppDatabase.getDatabase(requireContext())
+        db = AppDatabase.getDatabase(requireContext().applicationContext)
         dao = db.farmActivityDao()
-        activityDates = reloadActivityDates()
+        cropEntryDao = db.cropEntryDao()
         cropCardsContainer = view.findViewById(R.id.cropCardsContainer)
         btnAddCrop = view.findViewById(R.id.btnAddCrop)
         bannerContainer = view.findViewById(R.id.banner_container)
         tvNoCrops = view.findViewById(R.id.tvNoCrops)
-        cropEntryDao = db.cropEntryDao()
 
         btnAddCrop.setOnClickListener {
             showAddCropDialog()
         }
 
-        loadCropCards()
-        // When user taps a date
         val currentMonth = YearMonth.now()
-
         calendarView.setup(
             currentMonth.minusMonths(12),
             currentMonth.plusMonths(12),
             DayOfWeek.MONDAY
         )
-
         calendarView.scrollToMonth(currentMonth)
+
         val monthTitle = view.findViewById<TextView>(R.id.monthTitle)
+        monthTitle.text = currentMonth.format(monthYearFormatter)
 
         calendarView.monthScrollListener = { month ->
-            val formatter = DateTimeFormatter.ofPattern("MMMM yyyy")
-            monthTitle.text = month.yearMonth.format(formatter)
+            monthTitle.text = month.yearMonth.format(monthYearFormatter)
         }
 
-        monthTitle.text = currentMonth.format(
-            DateTimeFormatter.ofPattern("MMMM yyyy")
-        )
+        calendarView.dayBinder = object : MonthDayBinder<DayViewContainer> {
+            override fun create(view: View): DayViewContainer = DayViewContainer(view)
 
-        calendarView.dayBinder = object : MonthDayBinder<DayViewContainer>  {
-
-            override fun create(view: View) = DayViewContainer(view)
-
-            override fun bind(container: DayViewContainer, day: CalendarDay) {
-
-                // Always reset reused views
+            override fun bind(container: DayViewContainer, data: CalendarDay) {
                 container.textView.background = null
                 container.textView.setTextColor(Color.BLACK)
                 container.dot.visibility = View.GONE
 
-                if (day.position == DayPosition.MonthDate) {
-                    container.textView.text = day.date.dayOfMonth.toString()
-                } else {
+                if (data.position != DayPosition.MonthDate) {
                     container.textView.text = ""
                     return
                 }
 
+                container.textView.text = data.date.dayOfMonth.toString()
 
-                // ✅ Highlight TODAY
-                if (day.position == DayPosition.MonthDate &&
-                    day.date == LocalDate.now()) {
-
+                if (data.date == LocalDate.now()) {
                     container.textView.setBackgroundResource(R.drawable.bg_today)
                     container.textView.setTextColor(Color.WHITE)
                 }
 
-                // ✅ Show activity dot
-                if (activityDates.contains(day.date)) {
+                if (activityDates.contains(data.date)) {
                     container.dot.visibility = View.VISIBLE
                 }
 
-                // Click listener
                 container.view.setOnClickListener {
-                    selectedDate = day.date
+                    selectedDate = data.date
                         .atStartOfDay(ZoneId.systemDefault())
                         .toInstant()
                         .toEpochMilli()
-
                     showBottomSheet()
                 }
             }
-
         }
 
+        observeCalendarAndCrops()
         return view
     }
 
+    private fun observeCalendarAndCrops() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    dao.getAllActivityDates().collect { timestamps ->
+                        if (!isAdded) return@collect
+                        val zone = ZoneId.systemDefault()
+                        activityDates = timestamps.map {
+                            Instant.ofEpochMilli(it).atZone(zone).toLocalDate()
+                        }.toSet()
+                        calendarView.notifyCalendarChanged()
+                    }
+                }
+                launch {
+                    cropEntryDao.getAllCrops().collect { crops ->
+                        if (!isAdded) return@collect
+                        renderCropCards(crops)
+                    }
+                }
+            }
+        }
+    }
+
+    private fun refreshCalendarAndCrops() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            val (dates, crops) = withContext(Dispatchers.IO) {
+                reloadActivityDates() to cropEntryDao.getAllCrops().first()
+            }
+            if (!isAdded) return@launch
+            activityDates = dates
+            calendarView.notifyCalendarChanged()
+            renderCropCards(crops)
+        }
+    }
+
     private fun showBottomSheet() {
-        val bottomSheetView = layoutInflater.inflate(R.layout.bottomsheet_activities, null)
+        val bottomSheetView = layoutInflater.inflate(
+            R.layout.bottomsheet_activities,
+            null,
+            false
+        )
         val dialog = BottomSheetDialog(requireContext())
         dialog.setContentView(bottomSheetView)
 
@@ -154,33 +191,45 @@ class CalendarFragment : Fragment() {
         val addFab = bottomSheetView.findViewById<FloatingActionButton>(R.id.addActivityFab)
 
         val adapter = ActivityAdapter()
-
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
         recyclerView.adapter = adapter
 
         fun loadActivities() {
-            val endDate = getEndOfDay(selectedDate)
-            val activities = dao.getActivitiesByDate(selectedDate, endDate)
-            adapter.submitList(activities)
+            val startOfDay = Instant.ofEpochMilli(selectedDate)
+                .atZone(ZoneId.systemDefault())
+                .toLocalDate()
+                .atStartOfDay(ZoneId.systemDefault())
+                .toInstant()
+                .toEpochMilli()
+            val endOfDay = getEndOfDay(startOfDay)
+
+            viewLifecycleOwner.lifecycleScope.launch {
+                val activities = withContext(Dispatchers.IO) {
+                    dao.getActivitiesByDate(startOfDay, endOfDay).first()
+                }
+                if (!isAdded) return@launch
+                adapter.submitList(activities)
+            }
         }
 
         adapter.onDelete = { activity ->
-            dao.deleteActivity(activity)
-            ActivityReminderWorker.cancel(requireContext(), activity.id)
-            activityDates = reloadActivityDates()
-            calendarView.notifyCalendarChanged()
-            loadActivities()
-        }
-
-        adapter.onEdit = { activity ->
-            showEditDialog(activity) {
-                activityDates = reloadActivityDates()
-                calendarView.notifyCalendarChanged()
+            viewLifecycleOwner.lifecycleScope.launch {
+                withContext(Dispatchers.IO) {
+                    dao.deleteActivity(activity)
+                }
+                if (!isAdded) return@launch
+                WateringScheduler.cancel(requireContext(), activity.id)
+                ActivityReminderWorker.cancel(requireContext(), activity.id)
                 loadActivities()
             }
         }
 
-        val sdf = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
+        adapter.onEdit = { activity ->
+            showEditDialog(activity) {
+                loadActivities()
+            }
+        }
+
         dialog.setTitle("Activities on ${sdf.format(Date(selectedDate))}")
 
         addFab.setOnClickListener {
@@ -193,9 +242,8 @@ class CalendarFragment : Fragment() {
         dialog.show()
     }
 
-    private fun loadCropCards() {
+    private fun renderCropCards(crops: List<CropEntry>) {
         cropCardsContainer.removeAllViews()
-        val crops = cropEntryDao.getAllCrops()
 
         if (crops.isEmpty()) {
             tvNoCrops.visibility = View.VISIBLE
@@ -203,6 +251,7 @@ class CalendarFragment : Fragment() {
         }
 
         tvNoCrops.visibility = View.GONE
+        val dayMs = TimeUnit.DAYS.toMillis(1)
 
         for (crop in crops) {
             val cardView = layoutInflater.inflate(
@@ -211,7 +260,6 @@ class CalendarFragment : Fragment() {
                 false
             )
 
-            // Bind views
             val tvCropName = cardView.findViewById<TextView>(R.id.tvCropName)
             val tvDateRange = cardView.findViewById<TextView>(R.id.tvDateRange)
             val progressBar = cardView.findViewById<ProgressBar>(R.id.progressCrop)
@@ -221,58 +269,62 @@ class CalendarFragment : Fragment() {
             val btnMarkWatered = cardView.findViewById<Button>(R.id.btnMarkWatered)
             val btnDeleteCrop = cardView.findViewById<Button>(R.id.btnDeleteCrop)
 
-            // Crop name
             tvCropName.text = "🌱 ${crop.cropName}"
-
-            // Date range
             tvDateRange.text = "${sdf.format(crop.sowingDate)} → ${sdf.format(crop.expectedHarvestDate)}"
 
-            // Progress calculation
             val now = System.currentTimeMillis()
             val totalDuration = crop.expectedHarvestDate - crop.sowingDate
-            val elapsed = now - crop.sowingDate
-            val progressPercent = ((elapsed.toFloat() / totalDuration) * 100)
-                .coerceIn(0f, 100f).toInt()
-            val daysRemaining = ((crop.expectedHarvestDate - now) / (1000 * 60 * 60 * 24)).toInt()
+            val progressPercent = if (totalDuration > 0L) {
+                (((now - crop.sowingDate).toFloat() / totalDuration.toFloat()) * 100f)
+                    .coerceIn(0f, 100f)
+                    .toInt()
+            } else {
+                0
+            }
+            val daysRemaining = ((crop.expectedHarvestDate - now) / dayMs).toInt()
 
             progressBar.progress = progressPercent
             tvProgress.text = "$progressPercent% grown"
-            tvDaysRemaining.text = if (daysRemaining > 0) "$daysRemaining days left"
-            else "Ready to harvest! 🎉"
+            tvDaysRemaining.text = if (daysRemaining > 0) "$daysRemaining days left" else "Ready to harvest! 🎉"
 
-            // Next watering
             val lastWatered = crop.lastWateredDate ?: crop.sowingDate
-            val nextWatering = lastWatered + (crop.wateringIntervalDays * 24 * 60 * 60 * 1000L)
-            val daysUntilWater = ((nextWatering - now) / (1000 * 60 * 60 * 24)).toInt()
+            val nextWatering = lastWatered + (crop.wateringIntervalDays.toLong() * dayMs)
+            val daysUntilWater = ((nextWatering - now) / dayMs).toInt()
             tvNextWatering.text = when {
                 daysUntilWater < 0 -> "💧 Water now! (overdue)"
                 daysUntilWater == 0 -> "💧 Water today"
                 else -> "💧 Next watering in $daysUntilWater days"
             }
 
-            // Mark watered button
             btnMarkWatered.setOnClickListener {
                 val updated = crop.copy(lastWateredDate = System.currentTimeMillis())
-                cropEntryDao.updateCrop(updated)
-                WateringScheduler.schedule(requireContext(), updated)
-                Toast.makeText(
-                    requireContext(),
-                    "✅ ${crop.cropName} marked as watered!",
-                    Toast.LENGTH_SHORT
-                ).show()
-                loadCropCards()
+                viewLifecycleOwner.lifecycleScope.launch {
+                    withContext(Dispatchers.IO) {
+                        cropEntryDao.updateCrop(updated)
+                    }
+                    if (!isAdded) return@launch
+                    WateringScheduler.schedule(requireContext(), updated)
+                    Toast.makeText(
+                        requireContext(),
+                        "✅ ${crop.cropName} marked as watered!",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
             }
 
-            // Delete button
             btnDeleteCrop.setOnClickListener {
                 val cropId = crop.id
                 AlertDialog.Builder(requireContext())
                     .setTitle("Delete ${crop.cropName}?")
                     .setMessage("This will remove the crop tracking entry.")
                     .setPositiveButton("Delete") { _, _ ->
-                        cropEntryDao.deleteCrop(crop)
-                        WateringScheduler.cancel(requireContext(), cropId)
-                        loadCropCards()
+                        viewLifecycleOwner.lifecycleScope.launch {
+                            withContext(Dispatchers.IO) {
+                                cropEntryDao.deleteCrop(crop)
+                            }
+                            if (!isAdded) return@launch
+                            WateringScheduler.cancel(requireContext(), cropId)
+                        }
                     }
                     .setNegativeButton("Cancel", null)
                     .show()
@@ -283,128 +335,146 @@ class CalendarFragment : Fragment() {
     }
 
     private fun showAddCropDialog() {
-        val crops = cropEntryDao.getCropCount()
-        if (crops >= 2) {
-            AlertDialog.Builder(requireContext())
-                .setTitle("Free Limit Reached")
-                .setMessage("Free users can track up to 2 crops. Upgrade to Premium for unlimited crop tracking.")
-                .setPositiveButton("OK", null)
-                .show()
-            return
-        }
-
-        pickedSowingDate = 0L
-        pickedHarvestDate = 0L
-
-        val dialogView = layoutInflater.inflate(R.layout.dialog_add_crop, null)
-        val etCropName = dialogView.findViewById<TextInputEditText>(R.id.etCropName)
-        val etSowingDate = dialogView.findViewById<TextInputEditText>(R.id.etSowingDate)
-        val etHarvestDate = dialogView.findViewById<TextInputEditText>(R.id.etHarvestDate)
-        val etWateringInterval = dialogView.findViewById<TextInputEditText>(R.id.etWateringInterval)
-        val etCropNotes = dialogView.findViewById<TextInputEditText>(R.id.etCropNotes)
-
-        // Sowing date picker
-        etSowingDate.setOnClickListener {
-            val cal = Calendar.getInstance()
-            DatePickerDialog(requireContext(), { _, y, m, d ->
-                cal.set(y, m, d, 0, 0, 0)
-                cal.set(Calendar.MILLISECOND, 0)
-                pickedSowingDate = cal.timeInMillis
-                etSowingDate.setText(sdf.format(pickedSowingDate))
-            }, cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH)).show()
-        }
-
-        // Harvest date picker
-        etHarvestDate.setOnClickListener {
-            val cal = Calendar.getInstance()
-            DatePickerDialog(requireContext(), { _, y, m, d ->
-                cal.set(y, m, d, 0, 0, 0)
-                cal.set(Calendar.MILLISECOND, 0)
-                pickedHarvestDate = cal.timeInMillis
-                etHarvestDate.setText(sdf.format(pickedHarvestDate))
-            }, cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH)).show()
-        }
-
-        AlertDialog.Builder(requireContext())
-            .setTitle("Add Crop")
-            .setView(dialogView)
-            .setPositiveButton("Add") { _, _ ->
-                val name = etCropName.text.toString().trim()
-                val interval = etWateringInterval.text.toString().trim().toIntOrNull() ?: 2
-                val notes = etCropNotes.text.toString().trim()
-
-                if (name.isEmpty() || pickedSowingDate == 0L || pickedHarvestDate == 0L) {
-                    Toast.makeText(
-                        requireContext(),
-                        "Please fill in crop name and both dates",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                    return@setPositiveButton
-                }
-
-                val crop = CropEntry(
-                    cropName = name,
-                    sowingDate = pickedSowingDate,
-                    expectedHarvestDate = pickedHarvestDate,
-                    wateringIntervalDays = interval,
-                    notes = notes.ifEmpty { null }
-                )
-                cropEntryDao.insertCrop(crop)
-                val inserted = cropEntryDao.getCropByName(crop.cropName) // see DAO note below
-                if (inserted != null) {
-                    WateringScheduler.schedule(requireContext(), inserted)
-                }
-
-                loadCropCards()
+        viewLifecycleOwner.lifecycleScope.launch {
+            val cropCount = withContext(Dispatchers.IO) {
+                cropEntryDao.getCropCount()
             }
-            .setNegativeButton("Cancel", null)
-            .show()
+            if (!isAdded) return@launch
+
+            if (cropCount >= 2) {
+                AlertDialog.Builder(requireContext())
+                    .setTitle("Free Limit Reached")
+                    .setMessage("Free users can track up to 2 crops. Upgrade to Premium for unlimited crop tracking.")
+                    .setPositiveButton("OK", null)
+                    .show()
+                return@launch
+            }
+
+            pickedSowingDate = 0L
+            pickedHarvestDate = 0L
+
+            val dialogView = layoutInflater.inflate(R.layout.dialog_add_crop, null, false)
+            val etCropName = dialogView.findViewById<TextInputEditText>(R.id.etCropName)
+            val etSowingDate = dialogView.findViewById<TextInputEditText>(R.id.etSowingDate)
+            val etHarvestDate = dialogView.findViewById<TextInputEditText>(R.id.etHarvestDate)
+            val etWateringInterval = dialogView.findViewById<TextInputEditText>(R.id.etWateringInterval)
+            val etCropNotes = dialogView.findViewById<TextInputEditText>(R.id.etCropNotes)
+
+            etSowingDate.setOnClickListener {
+                val cal = Calendar.getInstance()
+                DatePickerDialog(
+                    requireContext(),
+                    { _, y, m, d ->
+                        cal.set(y, m, d, 0, 0, 0)
+                        cal.set(Calendar.MILLISECOND, 0)
+                        pickedSowingDate = cal.timeInMillis
+                        etSowingDate.setText(sdf.format(pickedSowingDate))
+                    },
+                    cal.get(Calendar.YEAR),
+                    cal.get(Calendar.MONTH),
+                    cal.get(Calendar.DAY_OF_MONTH)
+                ).show()
+            }
+
+            etHarvestDate.setOnClickListener {
+                val cal = Calendar.getInstance()
+                DatePickerDialog(
+                    requireContext(),
+                    { _, y, m, d ->
+                        cal.set(y, m, d, 0, 0, 0)
+                        cal.set(Calendar.MILLISECOND, 0)
+                        pickedHarvestDate = cal.timeInMillis
+                        etHarvestDate.setText(sdf.format(pickedHarvestDate))
+                    },
+                    cal.get(Calendar.YEAR),
+                    cal.get(Calendar.MONTH),
+                    cal.get(Calendar.DAY_OF_MONTH)
+                ).show()
+            }
+
+            AlertDialog.Builder(requireContext())
+                .setTitle("Add Crop")
+                .setView(dialogView)
+                .setPositiveButton("Add") { _, _ ->
+                    val name = etCropName.text.toString().trim()
+                    val interval = etWateringInterval.text.toString().trim().toIntOrNull() ?: 2
+                    val notes = etCropNotes.text.toString().trim()
+
+                    if (name.isEmpty() || pickedSowingDate == 0L || pickedHarvestDate == 0L) {
+                        Toast.makeText(
+                            requireContext(),
+                            "Please fill in crop name and both dates",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        return@setPositiveButton
+                    }
+
+                    val crop = CropEntry(
+                        cropName = name,
+                        sowingDate = pickedSowingDate,
+                        expectedHarvestDate = pickedHarvestDate,
+                        wateringIntervalDays = interval,
+                        notes = notes.ifEmpty { null }
+                    )
+
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        val savedCrop = withContext(Dispatchers.IO) {
+                            cropEntryDao.insertCrop(crop)
+                            cropEntryDao.getCropByName(crop.cropName)
+                        }
+                        if (!isAdded) return@launch
+                        if (savedCrop != null) {
+                            WateringScheduler.schedule(requireContext(), savedCrop)
+                        }
+                    }
+                }
+                .setNegativeButton("Cancel", null)
+                .show()
+        }
     }
+
     class DayViewContainer(view: View) : ViewContainer(view) {
-        val textView = view.findViewById<TextView>(R.id.dayText)
-        val dot = view.findViewById<View>(R.id.dot)
+        val textView: TextView = view.findViewById(R.id.dayText)
+        val dot: View = view.findViewById(R.id.dot)
     }
 
-    private fun normalizeDate(year: Int, month: Int, day: Int): Long {
-        val cal = Calendar.getInstance()
-        cal.set(year, month, day, 0, 0, 0)
-        cal.set(Calendar.MILLISECOND, 0)
-        return cal.timeInMillis
+    private fun getEndOfDay(startDateMs: Long): Long {
+        val nextDayStart = Instant.ofEpochMilli(startDateMs)
+            .atZone(ZoneId.systemDefault())
+            .toLocalDate()
+            .plusDays(1)
+            .atStartOfDay(ZoneId.systemDefault())
+            .toInstant()
+            .toEpochMilli()
+        return nextDayStart - 1L
     }
 
-    private fun getEndOfDay(startDate: Long): Long {
-        return startDate + (24 * 60 * 60 * 1000) - 1
-    }
-
-    private fun reloadActivityDates(): Set<LocalDate> {
-        return dao.getAllActivityDates().map {
-            Instant.ofEpochMilli(it)
-                .atZone(ZoneId.systemDefault())
-                .toLocalDate()
+    private suspend fun reloadActivityDates(): Set<LocalDate> {
+        val zone = ZoneId.systemDefault()
+        return dao.getAllActivityDates().first().map {
+            Instant.ofEpochMilli(it).atZone(zone).toLocalDate()
         }.toSet()
     }
 
-
     private fun showAddDialog(onAdded: () -> Unit) {
         val dialogView = LayoutInflater.from(requireContext())
-            .inflate(R.layout.dialog_add_activity, null)
+            .inflate(R.layout.dialog_add_activity, null, false)
 
-        val cropInput     = dialogView.findViewById<EditText>(R.id.cropEditText)
-        val typeInput     = dialogView.findViewById<EditText>(R.id.typeEditText)
-        val notesInput    = dialogView.findViewById<EditText>(R.id.notesEditText)
-        val etReminder    = dialogView.findViewById<TextInputEditText>(R.id.etReminderTime)
+        val cropInput = dialogView.findViewById<EditText>(R.id.cropEditText)
+        val typeInput = dialogView.findViewById<EditText>(R.id.typeEditText)
+        val notesInput = dialogView.findViewById<EditText>(R.id.notesEditText)
+        val etReminder = dialogView.findViewById<TextInputEditText>(R.id.etReminderTime)
 
         var pickedReminderMs: Long? = null
 
         etReminder.setOnClickListener {
-            // Default to selected date at 8 AM
             val cal = Calendar.getInstance().apply {
                 timeInMillis = selectedDate
                 set(Calendar.HOUR_OF_DAY, 8)
                 set(Calendar.MINUTE, 0)
             }
 
-            android.app.TimePickerDialog(
+            TimePickerDialog(
                 requireContext(),
                 { _, hour, minute ->
                     cal.set(Calendar.HOUR_OF_DAY, hour)
@@ -412,8 +482,13 @@ class CalendarFragment : Fragment() {
                     cal.set(Calendar.SECOND, 0)
                     pickedReminderMs = cal.timeInMillis
                     etReminder.setText(
-                        String.format("%02d:%02d on %s", hour, minute,
-                            SimpleDateFormat("dd MMM", Locale.getDefault()).format(cal.time))
+                        String.format(
+                            Locale.getDefault(),
+                            "%02d:%02d on %s",
+                            hour,
+                            minute,
+                            SimpleDateFormat("dd MMM", Locale.getDefault()).format(cal.time)
+                        )
                     )
                 },
                 cal.get(Calendar.HOUR_OF_DAY),
@@ -434,33 +509,35 @@ class CalendarFragment : Fragment() {
                     .toEpochMilli()
 
                 val activity = FarmActivity(
-                    date         = normalizedDate,
-                    crop         = cropInput.text.toString(),
+                    date = normalizedDate,
+                    crop = cropInput.text.toString(),
                     activityType = typeInput.text.toString(),
-                    notes        = notesInput.text.toString(),
-                    reminderTime = pickedReminderMs       // ← save reminder
+                    notes = notesInput.text.toString(),
+                    reminderTime = pickedReminderMs
                 )
 
-                dao.insertActivity(activity)
-
-                // Schedule reminder if user picked a time
-                pickedReminderMs?.let { reminderMs ->
-                    val inserted = dao.getLastInserted()  // see DAO note below
-                    if (inserted != null) {
-                        ActivityReminderWorker.schedule(
-                            context        = requireContext(),
-                            activityId     = inserted.id,
-                            crop           = inserted.crop,
-                            activityType   = inserted.activityType,
-                            notes          = inserted.notes ?: "",
-                            reminderTimeMs = reminderMs
-                        )
+                viewLifecycleOwner.lifecycleScope.launch {
+                    val inserted = withContext(Dispatchers.IO) {
+                        dao.insertActivity(activity)
+                        dao.getLastInserted()
                     }
-                }
+                    if (!isAdded) return@launch
 
-                activityDates = reloadActivityDates()
-                calendarView.notifyCalendarChanged()
-                onAdded()
+                    pickedReminderMs?.let { reminderMs ->
+                        if (inserted != null) {
+                            ActivityReminderWorker.schedule(
+                                context = requireContext(),
+                                activityId = inserted.id,
+                                crop = inserted.crop,
+                                activityType = inserted.activityType,
+                                notes = inserted.notes ?: "",
+                                reminderTimeMs = reminderMs
+                            )
+                        }
+                    }
+
+                    onAdded()
+                }
             }
             .setNegativeButton("Cancel", null)
             .show()
@@ -470,7 +547,8 @@ class CalendarFragment : Fragment() {
         activity: FarmActivity,
         onUpdated: () -> Unit
     ) {
-        val dialogView = layoutInflater.inflate(R.layout.dialog_add_activity, null)
+        val dialogView = LayoutInflater.from(requireContext())
+            .inflate(R.layout.dialog_add_activity, null, false)
 
         val cropInput = dialogView.findViewById<EditText>(R.id.cropEditText)
         val typeInput = dialogView.findViewById<EditText>(R.id.typeEditText)
@@ -490,18 +568,15 @@ class CalendarFragment : Fragment() {
                     notes = notesInput.text.toString()
                 )
 
-                dao.updateActivity(updated)
-                onUpdated()
+                viewLifecycleOwner.lifecycleScope.launch {
+                    withContext(Dispatchers.IO) {
+                        dao.updateActivity(updated)
+                    }
+                    if (!isAdded) return@launch
+                    onUpdated()
+                }
             }
             .setNegativeButton("Cancel", null)
             .show()
-    }
-    override fun onResume() {
-        super.onResume()
-        AdManager.showBanner(requireActivity(), bannerContainer)
-    }
-    override fun onPause() {
-        super.onPause()
-        AdManager.hideBanner()
     }
 }

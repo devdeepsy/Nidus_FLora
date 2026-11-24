@@ -100,20 +100,23 @@ class CommunityViewModel(
             }
         }
     }
+    private var myPostsJob: kotlinx.coroutines.Job? = null
 
     fun loadMyPosts() {
+        myPostsJob?.cancel()
         val uid = _authState.value.uid
         if (uid.isEmpty()) {
             _myPostsState.value = FeedState.Success(emptyList())
             return
         }
-        viewModelScope.launch {
+        myPostsJob = viewModelScope.launch {
             _myPostsState.value = FeedState.Loading
             try {
                 repository.getMyPosts(uid).collect { posts ->
                     _myPostsState.value = FeedState.Success(posts)
                 }
             } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
                 _myPostsState.value = FeedState.Error(e.message ?: "Failed to load")
             }
         }
@@ -150,18 +153,38 @@ class CommunityViewModel(
     }
 
     fun toggleLike(postId: String) {
-        viewModelScope.launch { repository.toggleLike(postId) }
+        viewModelScope.launch {
+            val result = repository.toggleLike(postId)
+            if (result.isFailure) {
+                _submitState.value = SubmitState.Error(
+                    result.exceptionOrNull()?.message ?: "Failed to update like"
+                )
+            }
+        }
     }
 
     fun deletePost(postId: String) {
-        viewModelScope.launch { repository.deletePost(postId) }
+        viewModelScope.launch {
+            val result = repository.deletePost(postId)
+            if (result.isFailure) {
+                _submitState.value = SubmitState.Error(
+                    result.exceptionOrNull()?.message ?: "Failed to delete post"
+                )
+            }
+        }
     }
 
     // ── Factory ───────────────────────────────────────────────────────
 
-    class Factory : ViewModelProvider.Factory {
+    class Factory(
+        private val repository: CommunityRepository = SharedRepository.instance
+    ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T =
-            CommunityViewModel(CommunityRepository()) as T
+            CommunityViewModel(repository) as T
+    }
+
+    object SharedRepository {
+        val instance: CommunityRepository by lazy { CommunityRepository() }
     }
 }
