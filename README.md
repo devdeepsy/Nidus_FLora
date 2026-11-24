@@ -15,7 +15,7 @@ Features Inside the Beta
 
 Join the Closed Beta Test (v1.0.0-beta)
 
-Nidus Flora is currently in an exclusive, free closed beta testing phase for our Tier-1 global community. I am actively collecting feedback to optimize my AI scanning accuracy and chatbot response pipelines before our official app store debut.
+Nidus Flora is currently in an exclusive, free closed beta testing phase for our global community. I am actively collecting feedback to optimize my AI scanning accuracy and chatbot response pipelines before our official app store debut.
 
 How to Install (Android APK)
 Since I am operating on a student-funded budget, the app is hosted directly via this repository for beta testers:
